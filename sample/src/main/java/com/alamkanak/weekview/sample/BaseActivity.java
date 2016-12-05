@@ -1,12 +1,16 @@
 package com.alamkanak.weekview.sample;
 
+import android.content.ClipData;
 import android.graphics.RectF;
-import android.graphics.Typeface;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.alamkanak.weekview.DateTimeInterpreter;
@@ -25,18 +29,21 @@ import java.util.Locale;
  * Created by Raquib-ul-Alam Kanak on 1/3/2014.
  * Website: http://alamkanak.github.io
  */
-public abstract class BaseActivity extends AppCompatActivity implements WeekView.EventClickListener, MonthLoader.MonthChangeListener, WeekView.EventLongPressListener, WeekView.EmptyViewLongPressListener, WeekView.EmptyViewClickListener, WeekView.AddEventClickListener {
+public abstract class BaseActivity extends AppCompatActivity implements WeekView.EventClickListener, MonthLoader.MonthChangeListener, WeekView.EventLongPressListener, WeekView.EmptyViewLongPressListener, WeekView.EmptyViewClickListener, WeekView.AddEventClickListener, WeekView.DropListener {
     private static final int TYPE_DAY_VIEW = 1;
     private static final int TYPE_THREE_DAY_VIEW = 2;
     private static final int TYPE_WEEK_VIEW = 3;
     private int mWeekViewType = TYPE_THREE_DAY_VIEW;
     protected WeekView mWeekView;
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_base);
+
+        TextView draggableView = (TextView) findViewById(R.id.draggable_view);
+        draggableView.setOnLongClickListener(new DragTapListener());
+
 
         // Get a reference for the week view in the layout.
         mWeekView = (WeekView) findViewById(R.id.weekView);
@@ -60,6 +67,9 @@ public abstract class BaseActivity extends AppCompatActivity implements WeekView
         // Set AddEvent Click Listener
         mWeekView.setAddEventClickListener(this);
 
+        // Set Drag and Drop Listener
+        mWeekView.setDropListener(this);
+
         // Set minDate
         /*Calendar minDate = Calendar.getInstance();
         minDate.set(Calendar.DAY_OF_MONTH, 1);
@@ -81,6 +91,15 @@ public abstract class BaseActivity extends AppCompatActivity implements WeekView
         setupDateTimeInterpreter(false);
     }
 
+    private final class DragTapListener implements View.OnLongClickListener {
+        @RequiresApi(api = Build.VERSION_CODES.HONEYCOMB)
+        @Override public boolean onLongClick(View v) {
+            ClipData               data          = ClipData.newPlainText("", "");
+            View.DragShadowBuilder shadowBuilder = new View.DragShadowBuilder(v);
+            v.startDrag(data, shadowBuilder, v, 0);
+            return true;
+        }
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -210,5 +229,10 @@ public abstract class BaseActivity extends AppCompatActivity implements WeekView
     @Override
     public void onAddEventClicked(Calendar startTime, Calendar endTime) {
         Toast.makeText(this, "Add event clicked.", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onDrop(View view, Calendar date) {
+        Toast.makeText(this, "View dropped to " + getWeekView().getDateTimeInterpreter().interpretDate(date), Toast.LENGTH_SHORT).show();
     }
 }
