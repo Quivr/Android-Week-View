@@ -36,14 +36,15 @@ public abstract class BaseActivity extends AppCompatActivity implements WeekView
     private int mWeekViewType = TYPE_THREE_DAY_VIEW;
     protected WeekView mWeekView;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_base);
 
+        //Text view with drag-and-drop ability
         TextView draggableView = (TextView) findViewById(R.id.draggable_view);
         draggableView.setOnLongClickListener(new DragTapListener());
-
 
         // Get a reference for the week view in the layout.
         mWeekView = (WeekView) findViewById(R.id.weekView);
@@ -94,7 +95,7 @@ public abstract class BaseActivity extends AppCompatActivity implements WeekView
     private final class DragTapListener implements View.OnLongClickListener {
         @RequiresApi(api = Build.VERSION_CODES.HONEYCOMB)
         @Override public boolean onLongClick(View v) {
-            ClipData               data          = ClipData.newPlainText("", "");
+            ClipData data = ClipData.newPlainText("", "");
             View.DragShadowBuilder shadowBuilder = new View.DragShadowBuilder(v);
             v.startDrag(data, shadowBuilder, v, 0);
             return true;
@@ -233,6 +234,6 @@ public abstract class BaseActivity extends AppCompatActivity implements WeekView
 
     @Override
     public void onDrop(View view, Calendar date) {
-        Toast.makeText(this, "View dropped to " + getWeekView().getDateTimeInterpreter().interpretDate(date), Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "View dropped to " + date, Toast.LENGTH_SHORT).show();
     }
 }
