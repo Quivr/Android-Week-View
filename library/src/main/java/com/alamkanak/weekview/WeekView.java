@@ -15,6 +15,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.support.annotation.Nullable;
+import android.support.annotation.RequiresApi;
 import android.support.v4.view.GestureDetectorCompat;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.view.animation.FastOutLinearInInterpolator;
@@ -27,6 +28,7 @@ import android.text.format.DateFormat;
 import android.text.style.StyleSpan;
 import android.util.AttributeSet;
 import android.util.TypedValue;
+import android.view.DragEvent;
 import android.view.GestureDetector;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
@@ -44,7 +46,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
-import static com.alamkanak.weekview.WeekViewUtil.*;
+import static com.alamkanak.weekview.WeekViewUtil.daysBetween;
+import static com.alamkanak.weekview.WeekViewUtil.isSameDay;
+import static com.alamkanak.weekview.WeekViewUtil.today;
 
 /**
  * Created by Raquib-ul-Alam Kanak on 7/21/2014.
@@ -175,6 +179,7 @@ public class WeekView extends View {
     private DateTimeInterpreter mDateTimeInterpreter;
     private ScrollListener mScrollListener;
     private AddEventClickListener mAddEventClickListener;
+    private DropListener mDropListener;
 
     private final GestureDetector.SimpleOnGestureListener mGestureListener = new GestureDetector.SimpleOnGestureListener() {
 
@@ -460,6 +465,11 @@ public class WeekView extends View {
 
     private void init() {
         resetHomeDate();
+
+        //set drag and drop listener, required Honeycomb+ Api level
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            setOnDragListener(new DragListener());
+        }
 
         // Scrolling initialization.
         mGestureDetector = new GestureDetectorCompat(mContext, mGestureListener);
@@ -1435,6 +1445,10 @@ public class WeekView extends View {
 
     public void setOnEventClickListener (EventClickListener listener) {
         this.mEventClickListener = listener;
+    }
+
+    public void setDropListener(DropListener dropListener) {
+        this.mDropListener = dropListener;
     }
 
     public EventClickListener getEventClickListener() {
@@ -2413,6 +2427,16 @@ public class WeekView extends View {
     //
     /////////////////////////////////////////////////////////////////
 
+    public interface DropListener {
+        /**
+         * Triggered when view dropped
+         *
+         * @param view: dropped view.
+         * @param date: object set with the date and time of the dropped coordinates on the view.
+         */
+        void onDrop(View view, Calendar date);
+    }
+
     public interface EventClickListener {
         /**
          * Triggered when clicked on one existing event
@@ -2514,5 +2538,23 @@ public class WeekView extends View {
             return true;
         }
 
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.HONEYCOMB)
+    private class DragListener implements View.OnDragListener {
+        @Override
+        public boolean onDrag(View v, DragEvent e) {
+            switch (e.getAction()) {
+                case DragEvent.ACTION_DROP:
+                    if (e.getX() > mHeaderColumnWidth && e.getY() > (mHeaderTextHeight + mHeaderRowPadding * 2 + mHeaderMarginBottom)) {
+                        Calendar selectedTime = getTimeFromPoint(e.getX(), e.getY());
+                        if (selectedTime != null) {
+                            mDropListener.onDrop(v, selectedTime);
+                        }
+                    }
+                    break;
+            }
+            return true;
+        }
     }
 }
