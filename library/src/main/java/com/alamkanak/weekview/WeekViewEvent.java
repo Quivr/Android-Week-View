@@ -1,6 +1,8 @@
 package com.alamkanak.weekview;
 
 import android.graphics.Shader;
+import android.support.annotation.ColorInt;
+import android.widget.ShareActionProvider;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -18,7 +20,7 @@ public class WeekViewEvent {
     private Calendar mEndTime;
     private String mName;
     private String mLocation;
-    private int mColor;
+    private @ColorInt int mColor;
     private boolean mAllDay;
     private Shader mShader;
 
@@ -233,7 +235,7 @@ public class WeekViewEvent {
         this.mLocation = location;
     }
 
-    public int getColor() {
+    public @ColorInt int getColor() {
         return mColor;
     }
 
