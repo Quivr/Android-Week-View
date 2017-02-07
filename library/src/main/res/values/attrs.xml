@@ -3,6 +3,7 @@
     <declare-styleable name="WeekView">
         <attr name="allDayEventHeight" format="dimension" />
         <attr name="autoLimitTime" format="boolean" />
+        <attr name="autoTextColor" format="boolean"/>
         <attr name="columnGap" format="dimension" />
         <attr name="dayBackgroundColor" format="color" />
         <attr name="dayNameLength" format="enum">
