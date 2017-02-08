@@ -360,7 +360,7 @@ public class WeekView extends View {
                         // Calculate left and right.
                         float left = 0;
                         float right = left + mWidthPerDay;
-                        // Draw the event and the event name on top of it.
+                        // Add the new event if its bounds are valid
                         if (left < right &&
                                 left < getWidth() &&
                                 top < getHeight() &&
