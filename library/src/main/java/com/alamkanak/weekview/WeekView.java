@@ -147,7 +147,6 @@ public class WeekView extends View {
     private int mNewEventTimeResolutionInMinutes = 15;
     private boolean mShowFirstDayOfWeekFirst = false;
 
-    private boolean autoEventTextColors = false;
     private boolean mIsFirstDraw = true;
     private boolean mAreDimensionsInvalid = true;
     @Deprecated
@@ -480,7 +479,6 @@ public class WeekView extends View {
             mMaxTime = a.getInt(R.styleable.WeekView_maxTime, mMaxTime);
             if(a.getBoolean(R.styleable.WeekView_dropListenerEnabled, false))
                 this.enableDropListener();
-            autoEventTextColors = a.getBoolean(R.styleable.WeekView_autoTextColor, autoEventTextColors);
         } finally {
             a.recycle();
         }
@@ -1164,8 +1162,8 @@ public class WeekView extends View {
             mEventTextPaint.setColor(textColorPicker.getTextColor(event));
         }
         // Get text dimensions.
-        if(autoEventTextColors) {
-            mEventTextPaint.setColor(WeekViewUtil.getTextColor(event.getColor()));
+        if(textColorPicker != null) {
+            mEventTextPaint.setColor(textColorPicker.getTextColor(event));
         }
         StaticLayout textLayout = new StaticLayout(bob, mEventTextPaint, availableWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
         if (textLayout.getLineCount() > 0) {
@@ -1859,14 +1857,6 @@ public class WeekView extends View {
 
     public TextColorPicker getTextColorPicker() {
         return textColorPicker;
-    }
-
-    public void setAutoEventTextColors(boolean autoEventTextColors) {
-        this.autoEventTextColors = autoEventTextColors;
-    }
-
-    public boolean hasAutoEventTextColors() {
-        return autoEventTextColors;
     }
 
     public int getEventPadding() {

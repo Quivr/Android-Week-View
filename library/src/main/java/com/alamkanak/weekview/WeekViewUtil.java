@@ -1,7 +1,5 @@
 package com.alamkanak.weekview;
 
-import android.graphics.Color;
-
 import java.util.Calendar;
 
 /**
@@ -87,11 +85,4 @@ public class WeekViewUtil {
     public static int getPassedMinutesInDay(int hour, int minute) {
         return hour * 60 + minute;
     }
-
-
-    public static int getTextColor(int color) {
-        double a = 1 - ( 0.299 * Color.red(color) + 0.587 * Color.green(color) + 0.114 * Color.blue(color))/255;
-        return a < 0.5 ? Color.BLACK : Color.WHITE;
-    }
-
 }
