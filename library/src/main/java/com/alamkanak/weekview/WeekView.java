@@ -334,7 +334,6 @@ public class WeekView extends View {
                     if (mAddEventClickListener != null) {
                         //round selectedTime to resolution
                         selectedTime.add(Calendar.MINUTE, -(mNewEventLengthInMinutes / 2));
-
                         int unroundedMinutes = selectedTime.get(Calendar.MINUTE);
                         int mod = unroundedMinutes % mNewEventTimeResolutionInMinutes;
                         selectedTime.add(Calendar.MINUTE, mod < Math.ceil(mNewEventTimeResolutionInMinutes / 2) ? -mod : (mNewEventTimeResolutionInMinutes - mod));
