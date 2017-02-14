@@ -328,6 +328,7 @@ public class WeekView extends View {
                     }
 
                     playSoundEffect(SoundEffectConstants.CLICK);
+
                     if (mEmptyViewClickListener != null)
                         mEmptyViewClickListener.onEmptyViewClicked((Calendar) selectedTime.clone());
 
