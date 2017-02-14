@@ -335,6 +335,11 @@ public class WeekView extends View {
                     if (mAddEventClickListener != null) {
                         //round selectedTime to resolution
                         selectedTime.add(Calendar.MINUTE, -(mNewEventLengthInMinutes / 2));
+                        //Fix selected time if before the minimum hour
+                        if(selectedTime.get(Calendar.HOUR_OF_DAY) < mMinTime) {
+                            selectedTime.set(Calendar.HOUR_OF_DAY, mMinTime);
+                            selectedTime.set(Calendar.MINUTE, 0);
+                        }
                         int unroundedMinutes = selectedTime.get(Calendar.MINUTE);
                         int mod = unroundedMinutes % mNewEventTimeResolutionInMinutes;
                         selectedTime.add(Calendar.MINUTE, mod < Math.ceil(mNewEventTimeResolutionInMinutes / 2) ? -mod : (mNewEventTimeResolutionInMinutes - mod));
