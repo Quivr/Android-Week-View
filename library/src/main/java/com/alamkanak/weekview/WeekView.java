@@ -2109,7 +2109,7 @@ public class WeekView extends View {
     /**
      * set fix visible time.
      * @param startHour limit time display on top (between 0~24)
-     * @param endHour limit time display at bottom (between 0~24 and > startHour)
+     * @param endHour limit time display at bottom (between 0~24 and more than startHour)
      * */
     public void setLimitTime(int startHour, int endHour){
         if(endHour <= startHour || startHour < 0 || endHour > 24){
