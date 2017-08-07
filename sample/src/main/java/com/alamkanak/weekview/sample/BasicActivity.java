@@ -1,8 +1,10 @@
 package com.alamkanak.weekview.sample;
 
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
 
+import com.alamkanak.weekview.TextColorPicker;
 import com.alamkanak.weekview.WeekViewEvent;
 
 import java.util.ArrayList;
@@ -22,6 +24,14 @@ public class BasicActivity extends BaseActivity {
 
         Typeface customTypeface = Typeface.createFromAsset(this.getAssets(), "fonts/Raleway/Raleway-Medium.ttf");
         mWeekView.setTypeface(customTypeface);
+        mWeekView.setTextColorPicker(new TextColorPicker() {
+            @Override
+            public int getTextColor(WeekViewEvent event) {
+                int color = event.getColor();
+                double a = 1 - ( 0.299 * Color.red(color) + 0.587 * Color.green(color) + 0.114 * Color.blue(color))/255;
+                return a < 0.2 ? Color.BLACK : Color.WHITE;
+            }
+        });
     }
 
     @Override
@@ -51,7 +61,7 @@ public class BasicActivity extends BaseActivity {
         endTime.set(Calendar.MINUTE, 30);
         endTime.set(Calendar.MONTH, newMonth-1);
         event = new WeekViewEvent(10, getEventTitle(startTime), startTime, endTime);
-        event.setColor(getResources().getColor(R.color.event_color_02));
+        event.setColor(getResources().getColor(R.color.event_color_05));
         events.add(event);
 
         startTime = Calendar.getInstance();

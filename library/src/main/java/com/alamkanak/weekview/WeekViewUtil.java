@@ -61,10 +61,10 @@ public class WeekViewUtil {
      * @param dateTwo the second date
      * @return the amount of days between dateTwo and dateOne
      */
-    public static int daysBetween(Calendar dateOne, Calendar dateTwo) {
+    public static int daysBetween(Calendar dateOne, Calendar dateTwo){
         return (int) (
                 (dateTwo.getTimeInMillis() + dateTwo.getTimeZone().getOffset(dateTwo.getTimeInMillis()) -
-                        (dateOne.getTimeInMillis() + dateOne.getTimeZone().getOffset(dateOne.getTimeInMillis())))
+                (dateOne.getTimeInMillis() + dateOne.getTimeZone().getOffset(dateOne.getTimeInMillis())))
                         / (1000 * 60 * 60 * 24f));
     }
 
@@ -86,4 +86,5 @@ public class WeekViewUtil {
     public static int getPassedMinutesInDay(int hour, int minute){
         return hour * 60 + minute;
     }
+
 }

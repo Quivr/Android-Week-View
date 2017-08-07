@@ -23,6 +23,7 @@
             <enum name="friday" value="6"/>
             <enum name="saturday" value="7"/>
         </attr>
+        <attr name="autoTextColor" format="boolean"/>
         <attr name="futureBackgroundColor" format="color"/>
         <attr name="futureWeekendBackgroundColor" format="color"/>
         <attr name="headerColumnBackground" format="color"/>

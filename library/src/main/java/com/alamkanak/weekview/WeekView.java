@@ -106,6 +106,7 @@ public class WeekView extends View {
     private int mMinimumFlingVelocity = 0;
     private int mScaledTouchSlop = 0;
     private EventRect mNewEventRect;
+    private TextColorPicker textColorPicker;
 
     // Attributes and their default values.
     private int mHourHeight = 50;
@@ -322,16 +323,29 @@ public class WeekView extends View {
 
                     playSoundEffect(SoundEffectConstants.CLICK);
                     if(mEmptyViewClickListener != null)
-                        mEmptyViewClickListener.onEmptyViewClicked(selectedTime);
+                        mEmptyViewClickListener.onEmptyViewClicked((Calendar) selectedTime.clone());
 
                     if(mAddEventClickListener != null) {
                         //round selectedTime to resolution
+                        selectedTime.add(Calendar.MINUTE, -(mNewEventLengthInMinutes / 2));
+                        //Fix selected time if before the minimum hour
+                        if(selectedTime.get(Calendar.HOUR_OF_DAY) < mMinTime) {
+                            selectedTime.set(Calendar.HOUR_OF_DAY, mMinTime);
+                            selectedTime.set(Calendar.MINUTE, 0);
+                        }
                         int unroundedMinutes = selectedTime.get(Calendar.MINUTE);
                         int mod = unroundedMinutes % mNewEventTimeResolutionInMinutes;
                         selectedTime.add(Calendar.MINUTE, mod < Math.ceil(mNewEventTimeResolutionInMinutes / 2) ? -mod : (mNewEventTimeResolutionInMinutes - mod));
 
                         Calendar endTime = (Calendar) selectedTime.clone();
-                        endTime.add(Calendar.MINUTE, Math.min(mNewEventLengthInMinutes, (24-selectedTime.get(Calendar.HOUR_OF_DAY))*60 - selectedTime.get(Calendar.MINUTE)));
+                        //Minus one to ensure it is the same day and not midnight (next day)
+                        int maxMinutes = (mMaxTime-selectedTime.get(Calendar.HOUR_OF_DAY))*60 - selectedTime.get(Calendar.MINUTE) - 1;
+                        endTime.add(Calendar.MINUTE, Math.min(maxMinutes, mNewEventLengthInMinutes));
+                        //If clicked at end of the day, fix selected startTime
+                        if(maxMinutes < mNewEventLengthInMinutes) {
+                            selectedTime.add(Calendar.MINUTE, maxMinutes - mNewEventLengthInMinutes);
+                        }
+
                         WeekViewEvent newEvent = new WeekViewEvent(mNewEventId, "", null, selectedTime, endTime);
 
                         int marginTop = mHourHeight * mMinTime;
@@ -343,7 +357,7 @@ public class WeekView extends View {
                         // Calculate left and right.
                         float left = 0;
                         float right = left + mWidthPerDay;
-                        // Draw the event and the event name on top of it.
+                        // Add the new event if its bounds are valid
                         if (left < right &&
                                 left < getWidth() &&
                                 top < getHeight() &&
@@ -1147,6 +1161,10 @@ public class WeekView extends View {
         int availableHeight = (int) (rect.bottom - originalTop - mEventPadding * 2);
         int availableWidth = (int) (rect.right - originalLeft - mEventPadding * 2);
 
+        // Get text color if necessary
+        if(textColorPicker != null) {
+            mEventTextPaint.setColor(textColorPicker.getTextColor(event));
+        }
         // Get text dimensions.
         StaticLayout textLayout = new StaticLayout(bob, mEventTextPaint, availableWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
         if(textLayout.getLineCount() > 0) {
@@ -1815,6 +1833,14 @@ public class WeekView extends View {
         mEventTextColor = eventTextColor;
         mEventTextPaint.setColor(mEventTextColor);
         invalidate();
+    }
+
+    public void setTextColorPicker(TextColorPicker textColorPicker) {
+        this.textColorPicker = textColorPicker;
+    }
+
+    public TextColorPicker getTextColorPicker() {
+        return textColorPicker;
     }
 
     public int getEventPadding() {
