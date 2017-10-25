@@ -1159,18 +1159,26 @@ public class WeekView extends View {
             int lineHeight = textLayout.getHeight() / textLayout.getLineCount();
 
             if (availableHeight >= lineHeight) {
-                // Calculate available number of line counts.
-                int availableLineCount = availableHeight / lineHeight;
-                do {
-                    // Ellipsize text to fit into event rect.
-                    if (event.getId() != mNewEventId)
-                        textLayout = new StaticLayout(TextUtils.ellipsize(bob, mEventTextPaint, availableLineCount * availableWidth, TextUtils.TruncateAt.END), mEventTextPaint, (int) (rect.right - originalLeft - mEventPadding * 2), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+				// Calculate available number of line counts.
+				int availableLineCount = availableHeight / lineHeight;
+                
+				// Ellipsize text to fit into event rect.
+				String[] lines = textLayout.getText().toString().split("\\r?\\n");
+				for(int i = 0; i != lines.length; i++) {
+					lines[i] = TextUtils.ellipsize(lines[i], mEventTextPaint, availableWidth, TextUtils.TruncateAt.END).toString();
+				}
 
-                    // Reduce line count.
-                    availableLineCount--;
-
-                    // Repeat until text is short enough.
-                } while (textLayout.getHeight() > availableHeight);
+                // We create a whole new text.
+				if(lines.length > availableLineCount && !lines[availableLineCount - 1].endsWith("…")) {
+					if(TextUtils.isEmpty(lines[availableLineCount - 1])) {
+						lines[availableLineCount - 1] = "…";
+					}
+					else {
+						lines[availableLineCount - 1] = lines[availableLineCount - 1].substring(0, lines[availableLineCount - 1].length() - 2) + "…";
+					}
+				}
+				lines = Arrays.copyOfRange(lines, 0, Math.min(lines.length, availableLineCount));
+				textLayout = new StaticLayout(TextUtils.join("\n", lines), mEventTextPaint, availableWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
 
                 // Draw text.
                 canvas.save();
