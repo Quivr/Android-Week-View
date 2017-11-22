@@ -203,8 +203,14 @@ public class WeekViewEvent {
         List<WeekViewEvent> events = new ArrayList<WeekViewEvent>();
         // The first millisecond of the next day is still the same day. (no need to split events for this).
         Calendar endTime = (Calendar) this.getEndTime().clone();
-        endTime.add(Calendar.MILLISECOND, -1);
-        if (!isSameDay(this.getStartTime(), endTime)) {
+        if(isAtStartOfNewDay(this.getStartTime(), endTime)) {
+            // Set end time to 1 minute before midnight to ensure the EventRect will get drawn correctly
+            endTime.set(Calendar.HOUR_OF_DAY, 23);
+            endTime.set(Calendar.MINUTE, 59);
+            WeekViewEvent event1 = new WeekViewEvent(this.getId(), this.getName(), this.getLocation(), this.getStartTime(), endTime, this.isAllDay());
+            event1.setColor(this.getColor());
+            events.add(event1);
+        }else if (!isSameDay(this.getStartTime(), endTime)) {
             endTime = (Calendar) this.getStartTime().clone();
             endTime.set(Calendar.HOUR_OF_DAY, 23);
             endTime.set(Calendar.MINUTE, 59);
@@ -241,7 +247,6 @@ public class WeekViewEvent {
         else{
             events.add(this);
         }
-
         return events;
     }
 }
