@@ -84,4 +84,25 @@ public class WeekViewUtil {
     public static int getPassedMinutesInDay(int hour, int minute){
         return hour * 60 + minute;
     }
+    
+    /**
+     * Checks if date2 is at the start of the next day after date1.
+     * For example, if date1 was January the 1st and date2 was January the 2nd at 00:00,
+     * this method would return true.
+     * @param date1
+     * @param date2
+     * @return Whether or not date2 is at the start of the day after date1
+     */
+    public static boolean isAtStartOfNewDay(Calendar date1, Calendar date2){
+        if(date2.get(Calendar.HOUR) == 0 &&
+                date2.get(Calendar.MINUTE) == 0 &&
+                date2.get(Calendar.SECOND) == 0 &&
+                date2.get(Calendar.MILLISECOND) == 0){
+            date2.add(Calendar.MILLISECOND, -1);
+            if(isSameDay(date1, date2)){
+                return true;
+            }
+        }
+        return false;
+    }
 }
