@@ -138,7 +138,7 @@ public class WeekView extends View {
     private int mHeaderColumnBackgroundColor = Color.WHITE;
     private int mDefaultEventColor;
     private int mNewEventColor;
-    private int mNewEventId = -100;
+    private String mNewEventIdentifier = "-100";
     private Drawable mNewEventIconDrawable;
     private int mNewEventLengthInMinutes = 60;
     private int mNewEventTimeResolutionInMinutes = 15;
@@ -301,7 +301,7 @@ public class WeekView extends View {
                 List<EventRect> reversedEventRects = mEventRects;
                 Collections.reverse(reversedEventRects);
                 for (EventRect eventRect : reversedEventRects) {
-                    if (eventRect.event.getId() != mNewEventId &&eventRect.rectF != null && e.getX() > eventRect.rectF.left && e.getX() < eventRect.rectF.right && e.getY() > eventRect.rectF.top && e.getY() < eventRect.rectF.bottom) {
+                    if (!mNewEventIdentifier.equals(eventRect.event.getIdentifier()) && eventRect.rectF != null && e.getX() > eventRect.rectF.left && e.getX() < eventRect.rectF.right && e.getY() > eventRect.rectF.top && e.getY() < eventRect.rectF.bottom) {
                         mEventClickListener.onEventClick(eventRect.originalEvent, eventRect.rectF);
                         playSoundEffect(SoundEffectConstants.CLICK);
                         return super.onSingleTapConfirmed(e);
@@ -338,7 +338,7 @@ public class WeekView extends View {
 
                         Calendar endTime = (Calendar) selectedTime.clone();
                         endTime.add(Calendar.MINUTE, Math.min(mNewEventLengthInMinutes, (24-selectedTime.get(Calendar.HOUR_OF_DAY))*60 - selectedTime.get(Calendar.MINUTE)));
-                        WeekViewEvent newEvent = new WeekViewEvent(mNewEventId, "", null, selectedTime, endTime);
+                        WeekViewEvent newEvent = new WeekViewEvent(mNewEventIdentifier, "", null, selectedTime, endTime);
 
                         int marginTop = mHourHeight * mMinTime;
                         float top = selectedTime.get(Calendar.HOUR_OF_DAY) * 60;
@@ -441,7 +441,9 @@ public class WeekView extends View {
             mEventTextColor = a.getColor(R.styleable.WeekView_eventTextColor, mEventTextColor);
             mNewEventColor = a.getColor(R.styleable.WeekView_newEventColor, mNewEventColor);
             mNewEventIconDrawable = a.getDrawable(R.styleable.WeekView_newEventIconResource);
-            mNewEventId = a.getInt(R.styleable.WeekView_newEventId, mNewEventId);
+            // For backward compatibility : Set "mNewEventIdentifier" if the attribute is "WeekView_newEventId" of type int
+            setNewEventId(a.getInt(R.styleable.WeekView_newEventId, Integer.parseInt(mNewEventIdentifier)));
+            mNewEventIdentifier =  (a.getString(R.styleable.WeekView_newEventIdentifier) != null)? a.getString(R.styleable.WeekView_newEventIdentifier) : mNewEventIdentifier;
             mNewEventLengthInMinutes = a.getInt(R.styleable.WeekView_newEventLengthInMinutes, mNewEventLengthInMinutes);
             mNewEventTimeResolutionInMinutes = a.getInt(R.styleable.WeekView_newEventTimeResolutionInMinutes, mNewEventTimeResolutionInMinutes);
             mEventPadding = a.getDimensionPixelSize(R.styleable.WeekView_eventPadding, mEventPadding);
@@ -1067,7 +1069,7 @@ public class WeekView extends View {
                         if(mEventRects.get(i).event.getStartTime().get(Calendar.HOUR_OF_DAY) < mMinTime)
                             topToUse = mHourHeight *  getPassedMinutesInDay(mMinTime, 0) / 60 + mCurrentOrigin.y + mHeaderHeight + mHeaderRowPadding * 2 + mHeaderMarginBottom + mTimeTextHeight/2 + mEventMarginVertical - marginTop;
 
-                        if(mEventRects.get(i).event.getId() != mNewEventId)
+                        if(!mNewEventIdentifier.equals(mEventRects.get(i).event.getIdentifier()))
                             drawEventTitle(mEventRects.get(i).event, mEventRects.get(i).rectF, canvas, topToUse, left);
                         else
                             drawEmptyImage(mEventRects.get(i).event, mEventRects.get(i).rectF, canvas, topToUse, left);
@@ -1163,7 +1165,7 @@ public class WeekView extends View {
                 int availableLineCount = availableHeight / lineHeight;
                 do {
                     // Ellipsize text to fit into event rect.
-                    if (event.getId() != mNewEventId)
+                    if (!mNewEventIdentifier.equals(event.getIdentifier()))
                         textLayout = new StaticLayout(TextUtils.ellipsize(bob, mEventTextPaint, availableLineCount * availableWidth, TextUtils.TruncateAt.END), mEventTextPaint, (int) (rect.right - originalLeft - mEventPadding * 2), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
 
                     // Reduce line count.
@@ -1860,12 +1862,22 @@ public class WeekView extends View {
         invalidate();
     }
 
-    public int getNewEventId(){
-        return mNewEventId;
+    public String getNewEventIdentifier(){
+        return mNewEventIdentifier;
     }
 
+    @Deprecated
+    public int getNewEventId() {
+        return Integer.parseInt(mNewEventIdentifier);
+    }
+
+    public void setNewEventIdentifier(String newEventId){
+        this.mNewEventIdentifier = newEventId;
+    }
+
+    @Deprecated
     public void setNewEventId(int newEventId){
-        this.mNewEventId = newEventId;
+        this.mNewEventIdentifier = String.valueOf(newEventId);
     }
 
     public int getNewEventLengthInMinutes(){

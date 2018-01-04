@@ -103,6 +103,7 @@ public class Event {
 
         // Create an week view event.
         WeekViewEvent weekViewEvent = new WeekViewEvent();
+        weekViewEvent.setIdentifier(getName());
         weekViewEvent.setName(getName());
         weekViewEvent.setStartTime(startTime);
         weekViewEvent.setEndTime(endTime);
