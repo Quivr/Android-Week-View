@@ -180,12 +180,14 @@ To do
 
 Changelog
 ---------
+**Version 2.0.1**
+* Make EventId on WeekViewEvent generic for custom calendar fetches
+
 **Version 2.0.0**
 * This fork is first released
 * Possibility to set minDate and maxDate
 * Allday events are supported
 * Events can be add by clicking on empty space
-
 
 **Version 1.2.6**
 
