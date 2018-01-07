@@ -179,6 +179,11 @@ public class WeekView extends View {
     private ScrollListener mScrollListener;
     private AddEventClickListener mAddEventClickListener;
 
+    //Scroll by amount of days desired functionnality
+    private boolean mIsCustomScrollableAmountsOfDaysEnabled = false;
+    private float startOriginForScroll = 0;
+    private float sizeOfScrollableView;
+
     private final GestureDetector.SimpleOnGestureListener mGestureListener = new GestureDetector.SimpleOnGestureListener() {
 
         @Override
@@ -279,7 +284,9 @@ public class WeekView extends View {
             switch (mCurrentFlingDirection) {
                 case LEFT:
                 case RIGHT:
-                    mScroller.fling((int) mCurrentOrigin.x, (int) mCurrentOrigin.y, (int) (velocityX * mXScrollingSpeed), 0, (int) getXMinLimit(), (int) getXMaxLimit(), (int) getYMinLimit(), (int) getYMaxLimit());
+                    if(!mIsCustomScrollableAmountsOfDaysEnabled) {
+                        mScroller.fling((int) mCurrentOrigin.x, (int) mCurrentOrigin.y, (int) (velocityX * mXScrollingSpeed), 0, (int) getXMinLimit(), (int) getXMaxLimit(), (int) getYMinLimit(), (int) getYMaxLimit());
+                    }
                     break;
                 case VERTICAL:
                     mScroller.fling((int) mCurrentOrigin.x, (int) mCurrentOrigin.y, 0, (int) velocityY, (int) getXMinLimit(), (int) getXMaxLimit(), (int) getYMinLimit(), (int) getYMaxLimit());
@@ -1643,6 +1650,7 @@ public class WeekView extends View {
         this.mNumberOfVisibleDays = numberOfVisibleDays;
         resetHomeDate();
         mCurrentOrigin.x = 0;
+        startOriginForScroll = mCurrentOrigin.x;
         mCurrentOrigin.y = 0;
         invalidate();
     }
@@ -2418,40 +2426,72 @@ public class WeekView extends View {
     }
 
     private void goToNearestOrigin(){
-        double leftDays = mCurrentOrigin.x / (mWidthPerDay + mColumnGap);
+        if(!mIsCustomScrollableAmountsOfDaysEnabled) {
+            double leftDays = mCurrentOrigin.x / (mWidthPerDay + mColumnGap);
 
-        if (mCurrentFlingDirection != Direction.NONE) {
-            // snap to nearest day
-            leftDays = Math.round(leftDays);
-        } else if (mCurrentScrollDirection == Direction.LEFT) {
-            // snap to last day
-            leftDays = Math.floor(leftDays);
-        } else if (mCurrentScrollDirection == Direction.RIGHT) {
-            // snap to next day
-            leftDays = Math.ceil(leftDays);
-        } else {
-            // snap to nearest day
-            leftDays = Math.round(leftDays);
-        }
+            if (mCurrentFlingDirection != Direction.NONE) {
+                // snap to nearest day
+                leftDays = Math.round(leftDays);
+            } else if (mCurrentScrollDirection == Direction.LEFT) {
+                // snap to last day
+                leftDays = Math.floor(leftDays);
+            } else if (mCurrentScrollDirection == Direction.RIGHT) {
+                // snap to next day
+                leftDays = Math.ceil(leftDays);
+            } else {
+                // snap to nearest day
+                leftDays = Math.round(leftDays);
+            }
 
-        int nearestOrigin = (int) (mCurrentOrigin.x - leftDays * (mWidthPerDay + mColumnGap));
-        boolean mayScrollHorizontal = mCurrentOrigin.x - nearestOrigin < getXMaxLimit()
-                && mCurrentOrigin.x - nearestOrigin > getXMinLimit();
+            int nearestOrigin = (int) (mCurrentOrigin.x - leftDays * (mWidthPerDay + mColumnGap));
+            boolean mayScrollHorizontal = mCurrentOrigin.x - nearestOrigin < getXMaxLimit()
+                    && mCurrentOrigin.x - nearestOrigin > getXMinLimit();
 
-        if (mayScrollHorizontal) {
-            mScroller.startScroll((int) mCurrentOrigin.x, (int) mCurrentOrigin.y, - nearestOrigin, 0);
-            ViewCompat.postInvalidateOnAnimation(WeekView.this);
-        }
+            if (mayScrollHorizontal) {
+                mScroller.startScroll((int) mCurrentOrigin.x, (int) mCurrentOrigin.y, -nearestOrigin, 0);
+                ViewCompat.postInvalidateOnAnimation(WeekView.this);
+            }
 
-        if (nearestOrigin != 0 && mayScrollHorizontal) {
+            if (nearestOrigin != 0 && mayScrollHorizontal) {
+                // Stop current animation.
+                mScroller.forceFinished(true);
+                // Snap to date.
+                mScroller.startScroll((int) mCurrentOrigin.x, (int) mCurrentOrigin.y, -nearestOrigin, 0, (int) (Math.abs(nearestOrigin) / mWidthPerDay * mScrollDuration));
+                ViewCompat.postInvalidateOnAnimation(WeekView.this);
+            }
+            // Reset scrolling and fling direction.
+            mCurrentScrollDirection = mCurrentFlingDirection = Direction.NONE;
+        }else {
+            sizeOfScrollableView = (mWidthPerDay + mColumnGap) * getNumberOfVisibleDays();
+            float beforeScroll = startOriginForScroll;
+            boolean isPassed = false;
+
+            if (mCurrentScrollDirection == Direction.LEFT) {
+                startOriginForScroll -= sizeOfScrollableView;
+                isPassed = true;
+            } else if (mCurrentScrollDirection == Direction.RIGHT) {
+                startOriginForScroll += sizeOfScrollableView;
+                isPassed = true;
+            }
+
+            boolean mayScrollHorizontal = beforeScroll - startOriginForScroll < getXMaxLimit()
+                    && mCurrentOrigin.x - startOriginForScroll > getXMinLimit();
+
             // Stop current animation.
             mScroller.forceFinished(true);
-            // Snap to date.
-            mScroller.startScroll((int) mCurrentOrigin.x, (int) mCurrentOrigin.y, -nearestOrigin, 0, (int) (Math.abs(nearestOrigin) / mWidthPerDay * mScrollDuration));
-            ViewCompat.postInvalidateOnAnimation(WeekView.this);
+
+            if (isPassed && mayScrollHorizontal) {
+                // Snap to date.
+                if (mCurrentScrollDirection == Direction.LEFT) {
+                    mScroller.startScroll((int) mCurrentOrigin.x, (int) mCurrentOrigin.y, (int) ((beforeScroll - mCurrentOrigin.x) - sizeOfScrollableView), 0, 200);
+                } else if (mCurrentScrollDirection == Direction.RIGHT) {
+                    mScroller.startScroll((int) mCurrentOrigin.x, (int) mCurrentOrigin.y, (int) (sizeOfScrollableView - (mCurrentOrigin.x - beforeScroll)), 0, 200);
+                }
+                ViewCompat.postInvalidateOnAnimation(WeekView.this);
+            }
+            // Reset scrolling and fling direction.
+            mCurrentScrollDirection = mCurrentFlingDirection = Direction.NONE;
         }
-        // Reset scrolling and fling direction.
-        mCurrentScrollDirection = mCurrentFlingDirection = Direction.NONE;
     }
 
 
@@ -2486,6 +2526,10 @@ public class WeekView extends View {
         } else {
             return false;
         }
+    }
+
+    public void setCustomScrolableDaysEnabled(boolean isEnabled){
+        mIsCustomScrollableAmountsOfDaysEnabled = isEnabled;
     }
 
 
@@ -2524,6 +2568,7 @@ public class WeekView extends View {
         mRefreshEvents = true;
 
         mCurrentOrigin.x = - daysBetween(mHomeDate, date) * (mWidthPerDay + mColumnGap);
+        startOriginForScroll = mCurrentOrigin.x;
         invalidate();
     }
 

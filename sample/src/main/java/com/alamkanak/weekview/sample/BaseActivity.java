@@ -61,6 +61,9 @@ public abstract class BaseActivity extends AppCompatActivity implements WeekView
         // Set AddEvent Click Listener
         mWeekView.setAddEventClickListener(this);
 
+        //Activate the scrolling by the NumberOfVisibleDays desired
+        mWeekView.setCustomScrolableDaysEnabled(true);
+
         // Set minDate
         /*Calendar minDate = Calendar.getInstance();
         minDate.set(Calendar.DAY_OF_MONTH, 1);
