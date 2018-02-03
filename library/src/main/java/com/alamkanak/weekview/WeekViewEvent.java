@@ -19,7 +19,9 @@ public class WeekViewEvent {
     private Calendar mEndTime;
     private String mName;
     private String mLocation;
-    private @ColorInt int mColor;
+    private
+    @ColorInt
+    int mColor;
     private boolean mAllDay;
     private Shader mShader;
 
@@ -234,7 +236,9 @@ public class WeekViewEvent {
         this.mLocation = location;
     }
 
-    public @ColorInt int getColor() {
+    public
+    @ColorInt
+    int getColor() {
         return mColor;
     }
 

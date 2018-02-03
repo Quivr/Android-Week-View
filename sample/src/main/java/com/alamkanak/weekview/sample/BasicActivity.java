@@ -28,7 +28,7 @@ public class BasicActivity extends BaseActivity {
             @Override
             public int getTextColor(WeekViewEvent event) {
                 int color = event.getColor();
-                double a = 1 - ( 0.299 * Color.red(color) + 0.587 * Color.green(color) + 0.114 * Color.blue(color))/255;
+                double a = 1 - (0.299 * Color.red(color) + 0.587 * Color.green(color) + 0.114 * Color.blue(color)) / 255;
                 return a < 0.2 ? Color.BLACK : Color.WHITE;
             }
         });

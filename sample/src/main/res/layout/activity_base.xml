@@ -29,7 +29,7 @@
         app:newEventTimeResolutionInMinutes="15"
         app:timeColumnResolution="60"
         app:dropListenerEnabled="true"
-        app:minOverlappingMinutes="5"/>
+        app:minOverlappingMinutes="5" />
 
     <TextView
         android:id="@+id/draggable_view"

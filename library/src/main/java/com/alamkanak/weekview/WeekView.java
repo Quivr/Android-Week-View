@@ -338,7 +338,7 @@ public class WeekView extends View {
                         //round selectedTime to resolution
                         selectedTime.add(Calendar.MINUTE, -(mNewEventLengthInMinutes / 2));
                         //Fix selected time if before the minimum hour
-                        if(selectedTime.get(Calendar.HOUR_OF_DAY) < mMinTime) {
+                        if (selectedTime.get(Calendar.HOUR_OF_DAY) < mMinTime) {
                             selectedTime.set(Calendar.HOUR_OF_DAY, mMinTime);
                             selectedTime.set(Calendar.MINUTE, 0);
                         }
@@ -352,7 +352,7 @@ public class WeekView extends View {
                         int maxMinutes = (mMaxTime - selectedTime.get(Calendar.HOUR_OF_DAY)) * 60 - selectedTime.get(Calendar.MINUTE) - 1;
                         endTime.add(Calendar.MINUTE, Math.min(maxMinutes, mNewEventLengthInMinutes));
                         //If clicked at end of the day, fix selected startTime
-                        if(maxMinutes < mNewEventLengthInMinutes) {
+                        if (maxMinutes < mNewEventLengthInMinutes) {
                             selectedTime.add(Calendar.MINUTE, maxMinutes - mNewEventLengthInMinutes);
                         }
 
@@ -488,7 +488,7 @@ public class WeekView extends View {
             mAutoLimitTime = a.getBoolean(R.styleable.WeekView_autoLimitTime, mAutoLimitTime);
             mMinTime = a.getInt(R.styleable.WeekView_minTime, mMinTime);
             mMaxTime = a.getInt(R.styleable.WeekView_maxTime, mMaxTime);
-            if(a.getBoolean(R.styleable.WeekView_dropListenerEnabled, false))
+            if (a.getBoolean(R.styleable.WeekView_dropListenerEnabled, false))
                 this.enableDropListener();
             mMinOverlappingMinutes = a.getInt(R.styleable.WeekView_minOverlappingMinutes, 0);
         } finally {
@@ -1170,7 +1170,7 @@ public class WeekView extends View {
         int availableWidth = (int) (rect.right - originalLeft - mEventPadding * 2);
 
         // Get text color if necessary
-        if(textColorPicker != null) {
+        if (textColorPicker != null) {
             mEventTextPaint.setColor(textColorPicker.getTextColor(event));
         }
         // Get text dimensions.
@@ -1317,7 +1317,7 @@ public class WeekView extends View {
         }
     }
 
-    private void clearEvents(){
+    private void clearEvents() {
         mEventRects.clear();
         mEvents.clear();
     }
@@ -2474,7 +2474,7 @@ public class WeekView extends View {
         this.mNewEventIconDrawable = newEventIconDrawable;
     }
 
-    public void enableDropListener(){
+    public void enableDropListener() {
         this.mEnableDropListener = true;
         //set drag and drop listener, required Honeycomb+ Api level
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
@@ -2482,7 +2482,7 @@ public class WeekView extends View {
         }
     }
 
-    public void disableDropListener(){
+    public void disableDropListener() {
         this.mEnableDropListener = false;
         //set drag and drop listener, required Honeycomb+ Api level
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
@@ -2490,15 +2490,15 @@ public class WeekView extends View {
         }
     }
 
-    public boolean isDropListenerEnabled(){
+    public boolean isDropListenerEnabled() {
         return this.mEnableDropListener;
     }
 
-    public void setMinOverlappingMinutes(int minutes){
+    public void setMinOverlappingMinutes(int minutes) {
         this.mMinOverlappingMinutes = minutes;
     }
 
-    public int getMinOverlappingMinutes(){
+    public int getMinOverlappingMinutes() {
         return this.mMinOverlappingMinutes;
     }
 
