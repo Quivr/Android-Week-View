@@ -95,6 +95,7 @@ public class WeekView extends View {
     private Paint mNewEventBackgroundPaint;
     private float mHeaderColumnWidth;
     private List<EventRect> mEventRects;
+    private List<WeekViewEvent> mEvents;
     private TextPaint mEventTextPaint;
     private TextPaint mNewEventTextPaint;
     private Paint mHeaderColumnBackgroundPaint;
@@ -172,6 +173,7 @@ public class WeekView extends View {
     private int mMaxTime = 24;
     private boolean mAutoLimitTime = false;
     private boolean mEnableDropListener = false;
+    private int mMinOverlappingMinutes = 0;
 
     // Listeners.
     private EventClickListener mEventClickListener;
@@ -319,11 +321,11 @@ public class WeekView extends View {
             // If the tap was on an empty space, then trigger the callback.
             if ((mEmptyViewClickListener != null || mAddEventClickListener != null) && e.getX() > mHeaderColumnWidth && e.getY() > (mHeaderHeight + mHeaderRowPadding * 2 + mHeaderMarginBottom)) {
                 Calendar selectedTime = getTimeFromPoint(e.getX(), e.getY());
-                List<EventRect> tempEventRects = new ArrayList<>(mEventRects);
-                mEventRects = new ArrayList<EventRect>();
+
                 if (selectedTime != null) {
+                    List<WeekViewEvent> tempEvents = new ArrayList<>(mEvents);
                     if (mNewEventRect != null) {
-                        tempEventRects.remove(mNewEventRect);
+                        tempEvents.remove(mNewEventRect.event);
                         mNewEventRect = null;
                     }
 
@@ -375,12 +377,16 @@ public class WeekView extends View {
                             RectF dayRectF = new RectF(left, top, right, bottom);
                             newEvent.setColor(mNewEventColor);
                             mNewEventRect = new EventRect(newEvent, newEvent, dayRectF);
-                            tempEventRects.add(mNewEventRect);
+                            tempEvents.add(newEvent);
+                            WeekView.this.clearEvents();
+                            cacheAndSortEvents(tempEvents);
+                            computePositionOfEvents(mEventRects);
+                            invalidate();
                         }
+
                     }
                 }
-                computePositionOfEvents(tempEventRects);
-                invalidate();
+
             }
             return super.onSingleTapConfirmed(e);
         }
@@ -484,6 +490,7 @@ public class WeekView extends View {
             mMaxTime = a.getInt(R.styleable.WeekView_maxTime, mMaxTime);
             if(a.getBoolean(R.styleable.WeekView_dropListenerEnabled, false))
                 this.enableDropListener();
+            mMinOverlappingMinutes = a.getInt(R.styleable.WeekView_minOverlappingMinutes, 0);
         } finally {
             a.recycle();
         }
@@ -1255,13 +1262,17 @@ public class WeekView extends View {
 
         // Get more events if the month is changed.
         if (mEventRects == null)
-            mEventRects = new ArrayList<EventRect>();
+            mEventRects = new ArrayList<>();
+
+        if (mEvents == null)
+            mEvents = new ArrayList<>();
+
         if (mWeekViewLoader == null && !isInEditMode())
             throw new IllegalStateException("You must provide a MonthChangeListener");
 
         // If a refresh was requested then reset some variables.
         if (mRefreshEvents) {
-            mEventRects.clear();
+            this.clearEvents();
             mFetchedPeriod = -1;
         }
 
@@ -1271,7 +1282,7 @@ public class WeekView extends View {
                 List<? extends WeekViewEvent> newEvents = mWeekViewLoader.onLoad(periodToFetch);
 
                 // Clear events.
-                mEventRects.clear();
+                this.clearEvents();
                 cacheAndSortEvents(newEvents);
                 calculateHeaderHeight();
 
@@ -1281,7 +1292,7 @@ public class WeekView extends View {
 
         // Prepare to calculate positions of each events.
         List<EventRect> tempEvents = mEventRects;
-        mEventRects = new ArrayList<EventRect>();
+        mEventRects = new ArrayList<>();
 
         // Iterate through each day with events to calculate the position of the events.
         while (tempEvents.size() > 0) {
@@ -1306,6 +1317,11 @@ public class WeekView extends View {
         }
     }
 
+    private void clearEvents(){
+        mEventRects.clear();
+        mEvents.clear();
+    }
+
     /**
      * Cache the event for smooth scrolling functionality.
      *
@@ -1318,6 +1334,7 @@ public class WeekView extends View {
         for (WeekViewEvent splitedEvent : splitedEvents) {
             mEventRects.add(new EventRect(splitedEvent, event, null));
         }
+        mEvents.add(event);
     }
 
     /**
@@ -1458,7 +1475,10 @@ public class WeekView extends View {
         long end1 = event1.getEndTime().getTimeInMillis();
         long start2 = event2.getStartTime().getTimeInMillis();
         long end2 = event2.getEndTime().getTimeInMillis();
-        return !((start1 >= end2) || (end1 <= start2));
+
+        long minOverlappingMillis = mMinOverlappingMinutes * 60 * 1000;
+
+        return !((start1 + minOverlappingMillis >= end2) || (end1 <= start2 + minOverlappingMillis));
     }
 
 
@@ -2472,6 +2492,14 @@ public class WeekView extends View {
 
     public boolean isDropListenerEnabled(){
         return this.mEnableDropListener;
+    }
+
+    public void setMinOverlappingMinutes(int minutes){
+        this.mMinOverlappingMinutes = minutes;
+    }
+
+    public int getMinOverlappingMinutes(){
+        return this.mMinOverlappingMinutes;
     }
 
     /////////////////////////////////////////////////////////////////

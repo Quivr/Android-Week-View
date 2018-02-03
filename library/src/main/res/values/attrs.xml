@@ -39,6 +39,7 @@
         <attr name="maxTime" format="integer" />
         <attr name="minHourHeight" format="dimension" />
         <attr name="minTime" format="integer" />
+        <attr name="minOverlappingMinutes" format="integer" />
         <attr name="newEventColor" format="color" />
         <attr name="newEventId" format="integer" />
         <attr name="newEventIdentifier" format="string" />
