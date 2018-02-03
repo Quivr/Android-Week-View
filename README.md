@@ -108,6 +108,7 @@ You can customize the look of the `WeekView` in xml. Use the following attribute
 - `columnGap`
 - `dayBackgroundColor`
 - `dayNameLength`
+- `dropListenerEnabled`: Whether items can be dropped on the weekview
 - `eventCornerRadius`
 - `eventMarginVertical`
 - `eventPadding`
@@ -129,6 +130,7 @@ You can customize the look of the `WeekView` in xml. Use the following attribute
 - `maxTime`
 - `minHourHeight`
 - `minTime`
+- `minOverlappingMinutes`: The minimal amount of overlap of 2 events needed to be seen as overlapping events
 - `newEventColor`
 - `newEventId`
 - `newEventIconResource`
@@ -168,6 +170,8 @@ Use the following interfaces according to your need.
 - `mWeekView.setDateTimeInterpreter()` to set your own labels for the calendar header row and header column
 - `mWeekView.setScrollListener()` to get an event every time the first visible day has changed
 - `mWeekView.setAddEventClickListener()` to get the start and end time of an event to add
+- `mWeekView.setTextColorPicker()` to change the textcolor of an event, based on the event. You can, for example, set a different text color depending on the color of the event.
+
 Sample
 ----------
 
