@@ -63,6 +63,6 @@
         <attr name="xScrollingSpeed" format="float" />
         <attr name="zoomFocusPoint" format="fraction" />
         <attr name="zoomFocusPointEnabled" format="boolean" />
-
+        <attr name="dropListenerEnabled" format="boolean" />
     </declare-styleable>
 </resources>

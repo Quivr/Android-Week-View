@@ -170,6 +170,7 @@ public class WeekView extends View {
     private int mMinTime = 0;
     private int mMaxTime = 24;
     private boolean mAutoLimitTime = false;
+    private boolean mEnableDropListener = false;
 
     // Listeners.
     private EventClickListener mEventClickListener;
@@ -465,6 +466,8 @@ public class WeekView extends View {
             mAutoLimitTime = a.getBoolean(R.styleable.WeekView_autoLimitTime, mAutoLimitTime);
             mMinTime = a.getInt(R.styleable.WeekView_minTime, mMinTime);
             mMaxTime = a.getInt(R.styleable.WeekView_maxTime, mMaxTime);
+            if(a.getBoolean(R.styleable.WeekView_dropListenerEnabled, false))
+                this.enableDropListener();
         } finally {
             a.recycle();
         }
@@ -474,11 +477,6 @@ public class WeekView extends View {
 
     private void init() {
         resetHomeDate();
-
-        //set drag and drop listener, required Honeycomb+ Api level
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            setOnDragListener(new DragListener());
-        }
 
         // Scrolling initialization.
         mGestureDetector = new GestureDetectorCompat(mContext, mGestureListener);
@@ -2426,6 +2424,26 @@ public class WeekView extends View {
 
     public void setNewEventIconDrawable(Drawable newEventIconDrawable) {
         this.mNewEventIconDrawable = newEventIconDrawable;
+    }
+
+    public void enableDropListener(){
+        this.mEnableDropListener = true;
+        //set drag and drop listener, required Honeycomb+ Api level
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            setOnDragListener(new DragListener());
+        }
+    }
+
+    public void disableDropListener(){
+        this.mEnableDropListener = false;
+        //set drag and drop listener, required Honeycomb+ Api level
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            setOnDragListener(null);
+        }
+    }
+
+    public boolean isDropListenerEnabled(){
+        return this.mEnableDropListener;
     }
 
     /////////////////////////////////////////////////////////////////
