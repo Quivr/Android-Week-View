@@ -51,8 +51,9 @@ public class AsynchronousActivity extends BaseActivity implements Callback<List<
 
     /**
      * Checks if an event falls into a specific year and month.
+     *
      * @param event The event to check for.
-     * @param year The year.
+     * @param year  The year.
      * @param month The month.
      * @return True if the event matches the year and month.
      */

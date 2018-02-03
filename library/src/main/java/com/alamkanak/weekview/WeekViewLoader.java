@@ -6,7 +6,7 @@ import java.util.List;
 public interface WeekViewLoader {
     /**
      * Convert a date into a double that will be used to reference when you're loading data.
-     *
+     * <p>
      * All periods that have the same integer part, define one period. Dates that are later in time
      * should have a greater return value.
      *
@@ -17,6 +17,7 @@ public interface WeekViewLoader {
 
     /**
      * Load the events within the period
+     *
      * @param periodIndex the period to load
      * @return A list with the events of this period
      */

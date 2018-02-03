@@ -19,15 +19,20 @@ import java.util.Date;
  */
 public class Event {
 
-    @Expose @SerializedName("name")
+    @Expose
+    @SerializedName("name")
     private String mName;
-    @Expose @SerializedName("dayOfMonth")
+    @Expose
+    @SerializedName("dayOfMonth")
     private int mDayOfMonth;
-    @Expose @SerializedName("startTime")
+    @Expose
+    @SerializedName("startTime")
     private String mStartTime;
-    @Expose @SerializedName("endTime")
+    @Expose
+    @SerializedName("endTime")
     private String mEndTime;
-    @Expose @SerializedName("color")
+    @Expose
+    @SerializedName("color")
     private String mColor;
 
     public String getName() {
@@ -71,7 +76,7 @@ public class Event {
     }
 
     @SuppressLint("SimpleDateFormat")
-    public WeekViewEvent toWeekViewEvent(){
+    public WeekViewEvent toWeekViewEvent() {
 
         // Parse time.
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");

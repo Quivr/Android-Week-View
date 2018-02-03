@@ -30,7 +30,7 @@ public class WeekViewUtil {
      *
      * @return the calendar instance
      */
-    public static Calendar today(){
+    public static Calendar today() {
         Calendar today = Calendar.getInstance();
         today.set(Calendar.HOUR_OF_DAY, 0);
         today.set(Calendar.MINUTE, 0);
@@ -66,22 +66,23 @@ public class WeekViewUtil {
                 ((dateOne.getTimeInMillis() + dateOne.getTimeZone().getOffset(dateOne.getTimeInMillis())) / (1000 * 60 * 60 * 24)));
     }
 
-     /*
-     * Returns the amount of minutes passed in the day before the time in the given date
-     * @param date
-     * @return amount of minutes in day before time
-     */
-    public static int getPassedMinutesInDay(Calendar date){
+    /*
+    * Returns the amount of minutes passed in the day before the time in the given date
+    * @param date
+    * @return amount of minutes in day before time
+    */
+    public static int getPassedMinutesInDay(Calendar date) {
         return getPassedMinutesInDay(date.get(Calendar.HOUR_OF_DAY), date.get(Calendar.MINUTE));
     }
 
     /**
      * Returns the amount of minutes in the given hours and minutes
+     *
      * @param hour
      * @param minute
      * @return amount of minutes in the given hours and minutes
      */
-    public static int getPassedMinutesInDay(int hour, int minute){
+    public static int getPassedMinutesInDay(int hour, int minute) {
         return hour * 60 + minute;
     }
 }
