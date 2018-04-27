@@ -15,6 +15,7 @@ import android.widget.Toast;
 
 import com.alamkanak.weekview.DateTimeInterpreter;
 import com.alamkanak.weekview.MonthLoader;
+import com.alamkanak.weekview.PrefetchingWeekViewLoader;
 import com.alamkanak.weekview.WeekView;
 import com.alamkanak.weekview.WeekViewEvent;
 
@@ -53,7 +54,16 @@ public abstract class BaseActivity extends AppCompatActivity implements WeekView
 
         // The week view has infinite scrolling horizontally. We have to provide the events of a
         // month every time the month changes on the week view.
-        mWeekView.setMonthChangeListener(this);
+
+        // Either use the default, non prefetching WeekViewLoader by uncommenting the following line
+        // mWeekView.setMonthChangeListener(this);
+
+        // Or use PrefetchingWeekViewLoader to avoid suddenly disappearing events:
+        // Setup a new month loader
+        MonthLoader monthLoader = new MonthLoader(this);
+        // Setup a prefetching WeekViewLoader, default prefetching is +/- 1 period
+        PrefetchingWeekViewLoader prefetchingWeekViewLoader = new PrefetchingWeekViewLoader(monthLoader);
+        mWeekView.setWeekViewLoader(prefetchingWeekViewLoader);
 
         // Set long press listener for events.
         mWeekView.setEventLongPressListener(this);

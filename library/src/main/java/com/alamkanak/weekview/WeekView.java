@@ -164,6 +164,7 @@ public class WeekView extends View {
     private boolean mHorizontalFlingEnabled = true;
     private boolean mVerticalFlingEnabled = true;
     private int mAllDayEventHeight = 100;
+    private boolean mAlwaysShowAllDayEventGap = false;
     private float mZoomFocusPoint = 0;
     private boolean mZoomFocusPointEnabled = true;
     private int mScrollDuration = 250;
@@ -190,8 +191,14 @@ public class WeekView extends View {
 
         @Override
         public boolean onDown(MotionEvent e) {
-            goToNearestOrigin();
+            stopScrolling();
             return true;
+        }
+
+        @Override
+        public boolean onSingleTapUp(MotionEvent e){
+            goToNearestOrigin();
+            return false;
         }
 
         @Override
@@ -298,6 +305,7 @@ public class WeekView extends View {
 
         @Override
         public boolean onSingleTapConfirmed(MotionEvent e) {
+            goToNearestOrigin();
 
             // If the tap was on an event then trigger the callback.
             if (mEventRects != null && mEventClickListener != null) {
@@ -397,6 +405,7 @@ public class WeekView extends View {
         @Override
         public void onLongPress(MotionEvent e) {
             super.onLongPress(e);
+            goToNearestOrigin();
 
             if (mEventLongPressListener != null && mEventRects != null) {
                 List<EventRect> reversedEventRects = mEventRects;
@@ -720,7 +729,7 @@ public class WeekView extends View {
                 }
             }
         }
-        if (containsAllDayEvent) {
+        if (containsAllDayEvent || mAlwaysShowAllDayEventGap) {
             mHeaderHeight = mHeaderTextHeight + (mAllDayEventHeight + mHeaderMarginBottom);
         } else {
             mHeaderHeight = mHeaderTextHeight;
@@ -881,11 +890,35 @@ public class WeekView extends View {
                 continue;
             }
 
-            // Get more events if necessary. We want to store the events 3 months beforehand. Get
-            // events only when it is the first iteration of the loop.
+            // Get more events if necessary.
+
+            // mFetchedPeriod: currently fetched period index
+            // mWeekViewLoader.toWeekViewPeriodIndex(day): index for the day we want to display
+            // fetchIndex = 1.0: end of period in the future reached
+            // fetchIndex = 0.0: end of period in the past reached
+            double fetchIndex = mWeekViewLoader.toWeekViewPeriodIndex(day) - mFetchedPeriod;
+
+            // if we are using the PrefetchingWeekViewLoader class, we need to adjust the bounds
+            // so that we wait to fetch new data until we really need it
+            double upperBound = 1.0;
+            double lowerBound = 0.0;
+
+            if(mWeekViewLoader instanceof PrefetchingWeekViewLoader){
+                // the offset causes the onMonthChangeListener to be trigger when half of the
+                // last fetched period is passed
+
+                // example:
+                // if the prefetching period = 1, we load the current period, the next and the previous
+                // when half of the next/previous period is passed, the listener is triggered to fetch new data
+                double boundOffset = (((PrefetchingWeekViewLoader) mWeekViewLoader).getPrefetchingPeriod() - 0.5);
+
+                upperBound = 1.0 + boundOffset;
+                lowerBound = 0.0 - boundOffset;
+            }
+
             if (mEventRects == null || mRefreshEvents ||
                     (dayNumber == leftDaysWithGaps + 1 && mFetchedPeriod != (int) mWeekViewLoader.toWeekViewPeriodIndex(day) &&
-                            Math.abs(mFetchedPeriod - mWeekViewLoader.toWeekViewPeriodIndex(day)) > 0.5)) {
+                            (fetchIndex >= upperBound || fetchIndex <= lowerBound))) {
                 getMoreEvents(day);
                 mRefreshEvents = false;
             }
@@ -2517,6 +2550,15 @@ public class WeekView extends View {
         return this.mMinOverlappingMinutes;
     }
 
+
+    public boolean alwaysShowAllDayEventGap() {
+        return mAlwaysShowAllDayEventGap;
+    }
+
+    public void alwaysShowAllDayEventGap(boolean mAlwaysShowAllDayEventGap) {
+        this.mAlwaysShowAllDayEventGap = mAlwaysShowAllDayEventGap;
+    }
+
     /////////////////////////////////////////////////////////////////
     //
     //      Functions related to scrolling.
@@ -2537,6 +2579,16 @@ public class WeekView extends View {
         }
 
         return val;
+    }
+
+    /**
+     * A lighter function to stop the current scroll animation
+     */
+    private void stopScrolling(){
+        //force scroller animation stop
+        mScroller.forceFinished(true);
+        // Reset scrolling and fling direction.
+        mCurrentScrollDirection = mCurrentFlingDirection = Direction.NONE;
     }
 
     private void goToNearestOrigin() {
