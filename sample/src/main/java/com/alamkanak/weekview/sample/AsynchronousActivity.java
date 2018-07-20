@@ -58,7 +58,7 @@ public class AsynchronousActivity extends BaseActivity implements Callback<List<
      * @return True if the event matches the year and month.
      */
     private boolean eventMatches(WeekViewEvent event, int year, int month) {
-        return (event.getStartTime().get(Calendar.YEAR) == year && event.getStartTime().get(Calendar.MONTH) == month - 1) || (event.getEndTime().get(Calendar.YEAR) == year && event.getEndTime().get(Calendar.MONTH) == month - 1);
+        return (event.getStartTime().getYear() == year && event.getStartTime().getMonthValue() == month - 1) || (event.getEndTime().getYear() == year && event.getEndTime().getMonthValue() == month - 1);
     }
 
     @Override

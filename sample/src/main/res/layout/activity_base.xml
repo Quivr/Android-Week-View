@@ -18,8 +18,6 @@
         app:headerRowPadding="12dp"
         app:columnGap="8dp"
         app:noOfVisibleDays="3"
-        app:minTime="4"
-        app:maxTime="16"
         app:autoLimitTime="false"
         app:headerRowBackgroundColor="@color/toolbar"
         app:dayBackgroundColor="#05000000"

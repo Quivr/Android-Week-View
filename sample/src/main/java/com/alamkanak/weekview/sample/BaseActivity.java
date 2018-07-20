@@ -1,11 +1,10 @@
 package com.alamkanak.weekview.sample;
 
+import android.app.Activity;
 import android.content.ClipData;
 import android.graphics.RectF;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.RequiresApi;
-import android.support.v7.app.AppCompatActivity;
 import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -19,6 +18,8 @@ import com.alamkanak.weekview.WeekView;
 import com.alamkanak.weekview.WeekViewEvent;
 
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -29,7 +30,7 @@ import java.util.Locale;
  * Created by Raquib-ul-Alam Kanak on 1/3/2014.
  * Website: http://alamkanak.github.io
  */
-public abstract class BaseActivity extends AppCompatActivity implements WeekView.EventClickListener, MonthLoader.MonthChangeListener, WeekView.EventLongPressListener, WeekView.EmptyViewLongPressListener, WeekView.EmptyViewClickListener, WeekView.AddEventClickListener, WeekView.DropListener {
+public abstract class BaseActivity extends Activity implements WeekView.EventClickListener, MonthLoader.MonthChangeListener, WeekView.EventLongPressListener, WeekView.EmptyViewLongPressListener, WeekView.EmptyViewClickListener, WeekView.AddEventClickListener, WeekView.DropListener {
     private static final int TYPE_DAY_VIEW = 1;
     private static final int TYPE_THREE_DAY_VIEW = 2;
     private static final int TYPE_WEEK_VIEW = 3;
@@ -70,22 +71,6 @@ public abstract class BaseActivity extends AppCompatActivity implements WeekView
         // Set Drag and Drop Listener
         mWeekView.setDropListener(this);
 
-        // Set minDate
-        /*Calendar minDate = Calendar.getInstance();
-        minDate.set(Calendar.DAY_OF_MONTH, 1);
-        minDate.add(Calendar.MONTH, 1);
-        mWeekView.setMinDate(minDate);
-
-        // Set maxDate
-        Calendar maxDate = Calendar.getInstance();
-        maxDate.add(Calendar.MONTH, 1);
-        maxDate.set(Calendar.DAY_OF_MONTH, 10);
-        mWeekView.setMaxDate(maxDate);
-
-        Calendar calendar = (Calendar) maxDate.clone();
-        calendar.add(Calendar.DATE, -2);
-        mWeekView.goToDate(calendar);*/
-
         //mWeekView.setAutoLimitTime(true);
         //mWeekView.setLimitTime(4, 16);
 
@@ -100,22 +85,14 @@ public abstract class BaseActivity extends AppCompatActivity implements WeekView
     @Override
     protected void onResume() {
         super.onResume();
-        /*mWeekView.setShowDistinctPastFutureColor(true);
-        mWeekView.setShowDistinctWeekendColor(true);
-        mWeekView.setFutureBackgroundColor(Color.rgb(24,85,96));
-        mWeekView.setFutureWeekendBackgroundColor(Color.rgb(255,0,0));
-        mWeekView.setPastBackgroundColor(Color.rgb(85,189,200));
-        mWeekView.setPastWeekendBackgroundColor(Color.argb(50, 0,255,0));
-        */
     }
 
     private final class DragTapListener implements View.OnLongClickListener {
-        @RequiresApi(api = Build.VERSION_CODES.HONEYCOMB)
         @Override
         public boolean onLongClick(View v) {
             ClipData data = ClipData.newPlainText("", "");
             View.DragShadowBuilder shadowBuilder = new View.DragShadowBuilder(v);
-            v.startDrag(data, shadowBuilder, v, 0);
+            v.startDragAndDrop(data, shadowBuilder, v, 0);
             return true;
         }
     }
@@ -184,17 +161,11 @@ public abstract class BaseActivity extends AppCompatActivity implements WeekView
     private void setupDateTimeInterpreter(final boolean shortDate) {
         mWeekView.setDateTimeInterpreter(new DateTimeInterpreter() {
             @Override
-            public String interpretDate(Calendar date) {
-                SimpleDateFormat weekdayNameFormat = new SimpleDateFormat("EEE", Locale.getDefault());
-                String weekday = weekdayNameFormat.format(date.getTime());
-                SimpleDateFormat format = new SimpleDateFormat(" M/d", Locale.getDefault());
-
-                // All android api level do not have a standard way of getting the first letter of
-                // the week day name. Hence we get the first char programmatically.
-                // Details: http://stackoverflow.com/questions/16959502/get-one-letter-abbreviation-of-week-day-of-a-date-in-java#answer-16959657
-                if (shortDate)
-                    weekday = String.valueOf(weekday.charAt(0));
-                return weekday.toUpperCase() + format.format(date.getTime());
+            public String interpretDate(LocalDateTime date) {
+                DateTimeFormatter weekdayNameFormat = DateTimeFormatter.ofPattern("EEE", Locale.getDefault());
+                String weekday = date.format(weekdayNameFormat);
+                DateTimeFormatter format = DateTimeFormatter.ofPattern(" M/d", Locale.getDefault());
+                return weekday.toUpperCase() + date.format(format);
             }
 
             @Override
@@ -213,8 +184,8 @@ public abstract class BaseActivity extends AppCompatActivity implements WeekView
         });
     }
 
-    protected String getEventTitle(Calendar time) {
-        return String.format("Event of %02d:%02d %s/%d", time.get(Calendar.HOUR_OF_DAY), time.get(Calendar.MINUTE), time.get(Calendar.MONTH) + 1, time.get(Calendar.DAY_OF_MONTH));
+    protected String getEventTitle(LocalDateTime time) {
+        return String.format("Event of %02d:%02d %s/%d", time.getHour(), time.getMinute(), time.getMonthValue() + 1, time.getDayOfMonth());
     }
 
     @Override
@@ -228,7 +199,7 @@ public abstract class BaseActivity extends AppCompatActivity implements WeekView
     }
 
     @Override
-    public void onEmptyViewLongPress(Calendar time) {
+    public void onEmptyViewLongPress(LocalDateTime time) {
         Toast.makeText(this, "Empty view long pressed: " + getEventTitle(time), Toast.LENGTH_SHORT).show();
     }
 
@@ -237,7 +208,7 @@ public abstract class BaseActivity extends AppCompatActivity implements WeekView
     }
 
     @Override
-    public void onEmptyViewClicked(Calendar date) {
+    public void onEmptyViewClicked(LocalDateTime date) {
         Toast.makeText(this, "Empty view" + " clicked: " + getEventTitle(date), Toast.LENGTH_SHORT).show();
     }
 
@@ -247,12 +218,12 @@ public abstract class BaseActivity extends AppCompatActivity implements WeekView
     }
 
     @Override
-    public void onAddEventClicked(Calendar startTime, Calendar endTime) {
+    public void onAddEventClicked(LocalDateTime startTime, LocalDateTime endTime) {
         Toast.makeText(this, "Add event clicked.", Toast.LENGTH_SHORT).show();
     }
 
     @Override
-    public void onDrop(View view, Calendar date) {
+    public void onDrop(View view, LocalDateTime date) {
         Toast.makeText(this, "View dropped to " + date.toString(), Toast.LENGTH_SHORT).show();
     }
 }

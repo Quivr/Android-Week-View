@@ -9,6 +9,7 @@ import com.google.gson.annotations.SerializedName;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -94,24 +95,15 @@ public class Event {
         }
 
         // Initialize start and end time.
-        Calendar now = Calendar.getInstance();
-        Calendar startTime = (Calendar) now.clone();
-        startTime.setTimeInMillis(start.getTime());
-        startTime.set(Calendar.YEAR, now.get(Calendar.YEAR));
-        startTime.set(Calendar.MONTH, now.get(Calendar.MONTH));
-        startTime.set(Calendar.DAY_OF_MONTH, getDayOfMonth());
-        Calendar endTime = (Calendar) startTime.clone();
-        endTime.setTimeInMillis(end.getTime());
-        endTime.set(Calendar.YEAR, startTime.get(Calendar.YEAR));
-        endTime.set(Calendar.MONTH, startTime.get(Calendar.MONTH));
-        endTime.set(Calendar.DAY_OF_MONTH, startTime.get(Calendar.DAY_OF_MONTH));
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime after = now.plusHours(1);
 
         // Create an week view event.
         WeekViewEvent weekViewEvent = new WeekViewEvent();
         weekViewEvent.setIdentifier(getName());
         weekViewEvent.setName(getName());
-        weekViewEvent.setStartTime(startTime);
-        weekViewEvent.setEndTime(endTime);
+        weekViewEvent.setStartTime(now);
+        weekViewEvent.setEndTime(after);
         weekViewEvent.setColor(Color.parseColor(getColor()));
 
         return weekViewEvent;

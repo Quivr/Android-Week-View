@@ -1,6 +1,6 @@
 package com.alamkanak.weekview;
 
-import java.util.Calendar;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface WeekViewLoader {
@@ -13,7 +13,7 @@ public interface WeekViewLoader {
      * @param instance the date
      * @return The period index in which the date falls (floating point number).
      */
-    double toWeekViewPeriodIndex(Calendar instance);
+    double toWeekViewPeriodIndex(LocalDateTime instance);
 
     /**
      * Load the events within the period
