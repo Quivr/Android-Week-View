@@ -1,5 +1,6 @@
-[Join our slack](https://join.slack.com/t/androidweekview/shared_invite/enQtMzEyMDE3NzU3NTM3LWQyZGRhNjRlMTUzNzNlNjNlM2M0OTMyMDhjMzE1NDMzOGQzYzhjNzI2YjZhZWM3MzJiY2I1YmY2NGEwOTlkNTY)
+# This project is no longer being maintained.
 
+Some bugs might get still get fixed, as we are still using this library. But we do not have the time or in-house skills to actively maintain it.
 
 Android Week View
 =================
