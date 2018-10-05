@@ -1,6 +1,6 @@
 # This project is no longer being maintained.
 
-Some bugs might get still get fixed, as we are still using this library. But we do not have the time or in-house skills to actively maintain it.
+Some bugs might still get fixed, as we are still using this library. But we do not have the time or in-house skills to actively maintain it.
 
 Android Week View
 =================
