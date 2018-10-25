@@ -1,16 +1,16 @@
 apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
 
 repositories {
     mavenCentral()
 }
 
 android {
-    compileSdkVersion 25
-    buildToolsVersion '25.0.2'
+    compileSdkVersion 28
 
     defaultConfig {
-        minSdkVersion 9
-        targetSdkVersion 25
+        minSdkVersion 14
+        targetSdkVersion 28
     }
 }
 
@@ -18,8 +18,9 @@ configurations {
     javadocDeps
 }
 dependencies {
-    compile 'com.android.support:appcompat-v7:25.1.0'
-    javadocDeps 'com.android.support:appcompat-v7:25.1.0'
+    implementation 'androidx.appcompat:appcompat:1.0.0'
+    javadocDeps 'androidx.appcompat:appcompat:1.0.0'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 }
 
 apply from: 'gradle-mvn-push.gradle'

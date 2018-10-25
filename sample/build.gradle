@@ -1,13 +1,14 @@
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
 
 android {
-    compileSdkVersion 25
-    buildToolsVersion '25.0.2'
+    compileSdkVersion 28
 
     defaultConfig {
         applicationId "com.alamkanak.weekview"
         minSdkVersion 14
-        targetSdkVersion 25
+        targetSdkVersion 28
         versionCode 1
         versionName "1.0"
     }
@@ -17,11 +18,25 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    repositories {
+        maven { url 'https://jitpack.io' }
+    }
 }
 
+
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile project(':library')
-    compile 'com.android.support:appcompat-v7:25.1.0'
-    compile 'com.squareup.retrofit:retrofit:1.9.0'
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'androidx.appcompat:appcompat:1.0.0'
+    implementation 'com.squareup.retrofit:retrofit:1.9.0'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation project(':library')
+    implementation 'androidx.core:core-ktx:1.0.0'
+
+//    implementation 'com.github.AndroidDeveloperLB:Android-Week-View:ef94b8d256'
+//    implementation 'com.github.AndroidDeveloperLB:Android-Week-View:develop-SNAPSHOT'
+//    implementation 'com.github.AndroidDeveloperLB:Android-Week-View:develop-v2.3.0-gef94b8d-26'
+
+}
+repositories {
+    mavenCentral()
 }

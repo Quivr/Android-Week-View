@@ -1,43 +1,19 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".BaseActivity"
-    android:background="#fff">
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
+    android:layout_height="match_parent" tools:context=".BaseActivity">
 
     <com.alamkanak.weekview.WeekView
-        android:id="@+id/weekView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:eventTextColor="@android:color/white"
-        app:textSize="12sp"
-        app:hourHeight="60dp"
-        app:headerColumnPadding="8dp"
-        app:headerColumnTextColor="@color/toolbar_text"
-        app:headerRowPadding="12dp"
-        app:columnGap="8dp"
-        app:noOfVisibleDays="3"
-        app:minTime="4"
-        app:maxTime="16"
-        app:autoLimitTime="false"
-        app:headerRowBackgroundColor="@color/toolbar"
-        app:dayBackgroundColor="#05000000"
-        app:todayBackgroundColor="#1848adff"
-        app:headerColumnBackground="#ffffffff"
-        app:todayHeaderTextColor="@color/accent"
-        app:newEventTimeResolutionInMinutes="15"
-        app:timeColumnResolution="60"
-        app:dropListenerEnabled="true"
-        app:minOverlappingMinutes="5" />
+        android:id="@+id/weekView" android:layout_width="match_parent" android:layout_height="match_parent"
+        app:autoLimitTime="false" app:dayBackgroundColor="#05000000" app:headerColumnTextColor="@color/toolbar_text"
+        app:headerRowBackgroundColor="@color/toolbar" app:maxTime="16" app:minOverlappingMinutes="5" app:minTime="4"
+        app:newEventTimeResolutionInMinutes="15" app:noOfVisibleDays="3" app:timeColumnResolution="60"
+        app:todayColumnBackgroundColor="#1848adff" app:todayHeaderTextColor="@color/accent"
+        app:untitledEventText="@string/untitled_event"/>
 
     <TextView
-        android:id="@+id/draggable_view"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textColor="@android:color/white"
-        android:background="#ffff0000"
-        android:padding="3dp"
-        android:text="@string/drag_me" />
+        android:id="@+id/draggable_view" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:background="#ffff0000" android:padding="3dp" android:text="@string/drag_me"
+        android:textColor="@android:color/white"/>
 
 </RelativeLayout>

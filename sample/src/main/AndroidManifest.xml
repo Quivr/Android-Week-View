@@ -1,28 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.alamkanak.weekview.sample">
+<manifest package="com.alamkanak.weekview.sample" xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
-        android:allowBackup="true"
-        android:icon="@drawable/ic_launcher"
-        android:label="@string/app_name"
-        android:theme="@style/AppTheme">
+        android:allowBackup="true" android:icon="@drawable/ic_launcher" android:label="@string/app_name"
+        android:theme="@style/AppTheme" tools:ignore="AllowBackup,GoogleAppIndexingWarning">
         <activity
-            android:name=".MainActivity"
-            android:label="@string/app_name">
+            android:name=".MainActivity" android:label="@string/app_name">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+
         <activity
-            android:name=".BasicActivity"
-            android:label="@string/title_activity_basic"></activity>
+            android:name=".BasicActivity" android:label="@string/title_activity_basic"/>
+
         <activity
-            android:name=".AsynchronousActivity"
-            android:label="@string/title_activity_asynchronous"></activity>
+            android:name=".AsynchronousActivity" android:label="@string/title_activity_asynchronous"/>
+
+        <activity
+            android:name=".WholeViewSnappingActivity" android:label="@string/title_activity_whole_view_snap"
+            android:screenOrientation="reverseLandscape" android:theme="@style/AppTheme.FullScreen"/>
     </application>
 
 </manifest>

@@ -46,8 +46,6 @@ There is also a [sample app](https://github.com/quivr/Android-Week-View/tree/mas
 License
 ----------
 
-    Copyright 2014 Raquib-ul-Alam
-
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
     You may obtain a copy of the License at
