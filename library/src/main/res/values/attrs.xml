@@ -65,5 +65,6 @@
         <attr name="zoomFocusPoint" format="fraction" />
         <attr name="zoomFocusPointEnabled" format="boolean" />
         <attr name="dropListenerEnabled" format="boolean" />
+        <attr name="isScrollNumberOfVisibleDays" format="boolean" />
     </declare-styleable>
 </resources>
