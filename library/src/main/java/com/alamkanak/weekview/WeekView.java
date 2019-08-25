@@ -350,7 +350,7 @@ public class WeekView extends View {
                                 top < getHeight() &&
                                 right > mHeaderColumnWidth &&
                                 bottom > 0
-                                ) {
+                        ) {
                             RectF dayRectF = new RectF(left, top, right, bottom - mCurrentOrigin.y);
                             newEvent.setColor(mNewEventColor);
                             mNewEventRect = new EventRect(newEvent, newEvent, dayRectF);
@@ -709,7 +709,7 @@ public class WeekView extends View {
         canvas.save();
         canvas.clipRect(0, mHeaderHeight + mHeaderRowPadding * 2, mHeaderColumnWidth, getHeight());
         canvas.restore();
-        
+
         for (int i = 0; i < getNumberOfPeriods(); i++) {
             // If we are showing half hours (eg. 5:30am), space the times out by half the hour height
             // and need to provide 30 minutes on each odd period, otherwise, minutes is always 0.
@@ -929,7 +929,7 @@ public class WeekView extends View {
         canvas.clipRect(0, 0, mTimeTextWidth + mHeaderColumnPadding * 2, mHeaderHeight + mHeaderRowPadding * 2);
         canvas.drawRect(0, 0, mTimeTextWidth + mHeaderColumnPadding * 2, mHeaderHeight + mHeaderRowPadding * 2, mHeaderBackgroundPaint);
         canvas.restore();
-        
+
         // Clip to paint header row only.
         canvas.save();
         canvas.clipRect(mHeaderColumnWidth, 0, getWidth(), mHeaderHeight + mHeaderRowPadding * 2);
@@ -1070,7 +1070,7 @@ public class WeekView extends View {
                             top < getHeight() &&
                             right > mHeaderColumnWidth &&
                             bottom > mHeaderHeight + mHeaderRowPadding * 2 + mTimeTextHeight / 2 + mHeaderMarginBottom
-                            ) {
+                    ) {
                         mEventRects.get(i).rectF = new RectF(left, top, right, bottom);
                         mEventBackgroundPaint.setColor(mEventRects.get(i).event.getColor() == 0 ? mDefaultEventColor : mEventRects.get(i).event.getColor());
                         mEventBackgroundPaint.setShader(mEventRects.get(i).event.getShader());
@@ -1123,7 +1123,7 @@ public class WeekView extends View {
                             top < getHeight() &&
                             right > mHeaderColumnWidth &&
                             bottom > 0
-                            ) {
+                    ) {
                         mEventRects.get(i).rectF = new RectF(left, top, right, bottom);
                         mEventBackgroundPaint.setColor(mEventRects.get(i).event.getColor() == 0 ? mDefaultEventColor : mEventRects.get(i).event.getColor());
                         mEventBackgroundPaint.setShader(mEventRects.get(i).event.getShader());
@@ -1149,11 +1149,13 @@ public class WeekView extends View {
         if (rect.right - rect.left - mEventPadding * 2 < 0) return;
         if (rect.bottom - rect.top - mEventPadding * 2 < 0) return;
 
+
+        if (mNewEventIdentifier.equals(event.getIdentifier())) return;
+
         // Prepare the name of the event.
-        SpannableStringBuilder bob = new SpannableStringBuilder();
+        StringBuilder bob = new StringBuilder();
         if (!TextUtils.isEmpty(event.getName())) {
             bob.append(event.getName());
-            bob.setSpan(new StyleSpan(android.graphics.Typeface.BOLD), 0, bob.length(), 0);
         }
         // Prepare the location of the event.
         if (!TextUtils.isEmpty(event.getLocation())) {
@@ -1174,27 +1176,56 @@ public class WeekView extends View {
         if (textLayout.getLineCount() > 0) {
             int lineHeight = textLayout.getHeight() / textLayout.getLineCount();
 
-            if (availableHeight >= lineHeight) {
-                // Calculate available number of line counts.
-                int availableLineCount = availableHeight / lineHeight;
-                do {
-                    // Ellipsize text to fit into event rect.
-                    if (!mNewEventIdentifier.equals(event.getIdentifier()))
-                        textLayout = new StaticLayout(TextUtils.ellipsize(bob, mEventTextPaint, availableLineCount * availableWidth, TextUtils.TruncateAt.END), mEventTextPaint, (int) (rect.right - originalLeft - mEventPadding * 2), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-
-                    // Reduce line count.
-                    availableLineCount--;
-
-                    // Repeat until text is short enough.
-                } while (textLayout.getHeight() > availableHeight);
-
-                // Draw text.
-                canvas.save();
-                canvas.translate(originalLeft + mEventPadding, originalTop + mEventPadding);
-                textLayout.draw(canvas);
-                canvas.restore();
+            if (availableHeight < lineHeight) {
+                return;
             }
+            String text = textLayout.getText().toString();
+            SpannableStringBuilder correctedText = getEllipsizedText(text, rect, originalLeft, availableHeight, availableWidth, lineHeight);
+
+            boolean wholeNameIsShown = correctedText.toString().startsWith(event.getName());
+            // make event name bold
+            if (wholeNameIsShown) {
+                correctedText.setSpan(new StyleSpan(android.graphics.Typeface.BOLD), 0, event.getName().length(), 0);
+            } else { // text must be ellipsized and the location (if any) is totally cut of
+                correctedText.setSpan(new StyleSpan(android.graphics.Typeface.BOLD), 0, correctedText.length(), 0);
+            }
+
+            textLayout = new StaticLayout(correctedText, mEventTextPaint, (int) (rect.right - originalLeft - mEventPadding * 2),
+                    Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+
+            // Draw text.
+            canvas.save();
+            canvas.translate(originalLeft + mEventPadding, originalTop + mEventPadding);
+            textLayout.draw(canvas);
+            canvas.restore();
         }
+    }
+
+    private SpannableStringBuilder getEllipsizedText(String text, RectF rect, float originalLeft, int availableHeight, int availableWidth, int lineHeight) {
+        // Calculate available number of line counts.
+        @SuppressWarnings("UnnecessaryLocalVariable")
+        int availableLineCount = availableHeight / lineHeight;
+        int availableLinesLeft = availableLineCount;
+        String[] lines = text.split("\n");
+        List<String> newLines = new ArrayList<>();
+        for (String s : lines) {
+            if (availableLinesLeft < 1) {
+                break;
+            }
+            CharSequence ellipsizedLine = TextUtils.ellipsize(
+                    s,
+                    mEventTextPaint, availableWidth * availableLinesLeft, TextUtils.TruncateAt.END);
+            newLines.add((String) ellipsizedLine);
+            StaticLayout textLayout = new StaticLayout(ellipsizedLine, mEventTextPaint, (int) (rect.right - originalLeft - mEventPadding * 2),
+                    Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            availableLinesLeft -= textLayout.getLineCount();
+        }
+        SpannableStringBuilder correctedText = new SpannableStringBuilder();
+        for (String line : newLines) {
+            correctedText.append(line);
+            correctedText.append("\n");
+        }
+        return correctedText;
     }
 
     /**
@@ -2776,6 +2807,7 @@ public class WeekView extends View {
     public interface ZoomEndListener {
         /**
          * Triggered when the user finishes a zoom action.
+         *
          * @param hourHeight The final height of hours when the user finishes zoom.
          */
         void onZoomEnd(int hourHeight);
