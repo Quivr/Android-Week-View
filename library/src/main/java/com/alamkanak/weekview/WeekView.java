@@ -95,6 +95,7 @@ public class WeekView extends View {
     private int mTextSize = 12;
     private int mHeaderColumnPadding = 10;
     private int mHeaderColumnTextColor = Color.BLACK;
+    private int mHeaderLineTextColor = Color.BLACK;
     private int mNumberOfVisibleDays = 3;
     private int mHeaderRowPadding = 10;
     private int mHeaderRowBackgroundColor = Color.WHITE;
@@ -429,6 +430,7 @@ public class WeekView extends View {
             mHeaderColumnPadding = a.getDimensionPixelSize(R.styleable.WeekView_headerColumnPadding, mHeaderColumnPadding);
             mColumnGap = a.getDimensionPixelSize(R.styleable.WeekView_columnGap, mColumnGap);
             mHeaderColumnTextColor = a.getColor(R.styleable.WeekView_headerColumnTextColor, mHeaderColumnTextColor);
+            mHeaderLineTextColor = a.getColor(R.styleable.WeekView_headerLineTextColor, mHeaderLineTextColor);
             mNumberOfVisibleDays = a.getInteger(R.styleable.WeekView_noOfVisibleDays, mNumberOfVisibleDays);
             mShowFirstDayOfWeekFirst = a.getBoolean(R.styleable.WeekView_showFirstDayOfWeekFirst, mShowFirstDayOfWeekFirst);
             mHeaderRowPadding = a.getDimensionPixelSize(R.styleable.WeekView_headerRowPadding, mHeaderRowPadding);
@@ -497,7 +499,7 @@ public class WeekView extends View {
         mTimeTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mTimeTextPaint.setTextAlign(Paint.Align.RIGHT);
         mTimeTextPaint.setTextSize(mTextSize);
-        mTimeTextPaint.setColor(mHeaderColumnTextColor);
+        mTimeTextPaint.setColor(mHeaderLineTextColor);
 
         Rect rect = new Rect();
         final String exampleTime = (mTimeColumnResolution % 60 != 0) ? "00:00 PM" : "00 PM";
@@ -1779,7 +1781,16 @@ public class WeekView extends View {
     public void setHeaderColumnTextColor(int headerColumnTextColor) {
         mHeaderColumnTextColor = headerColumnTextColor;
         mHeaderTextPaint.setColor(mHeaderColumnTextColor);
-        mTimeTextPaint.setColor(mHeaderColumnTextColor);
+        invalidate();
+    }
+
+    public int getHeaderLineTextColor() {
+        return mHeaderLineTextColor;
+    }
+
+    public void setHeaderLineTextColor(int headerLineTextColor) {
+        mHeaderLineTextColor = headerLineTextColor;
+        mTimeTextPaint.setColor(mHeaderLineTextColor);
         invalidate();
     }
 
