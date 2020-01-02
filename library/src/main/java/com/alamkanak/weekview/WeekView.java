@@ -1481,7 +1481,7 @@ public class WeekView extends View {
         long start2 = event2.getStartTime().getTimeInMillis();
         long end2 = event2.getEndTime().getTimeInMillis();
 
-        long minOverlappingMillis = mMinOverlappingMinutes * 60 * 1000;
+        long minOverlappingMillis = mMinOverlappingMinutes * 60L * 1000L;
 
         return !((start1 + minOverlappingMillis >= end2) || (end1 <= start2 + minOverlappingMillis));
     }
