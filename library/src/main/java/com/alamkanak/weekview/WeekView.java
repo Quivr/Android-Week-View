@@ -481,6 +481,10 @@ public class WeekView extends View {
         }
 
         init();
+
+        if (isInEditMode()) {
+            goToHour(Math.max(Calendar.getInstance().get(Calendar.HOUR_OF_DAY) - 2, 0));
+        }
     }
 
     private void init() {
@@ -717,7 +721,7 @@ public class WeekView extends View {
         canvas.save();
         canvas.clipRect(0, mHeaderHeight + mHeaderRowPadding * 2, mHeaderColumnWidth, getHeight());
         canvas.restore();
-        
+
         for (int i = 0; i < getNumberOfPeriods(); i++) {
             // If we are showing half hours (eg. 5:30am), space the times out by half the hour height
             // and need to provide 30 minutes on each odd period, otherwise, minutes is always 0.
@@ -868,9 +872,9 @@ public class WeekView extends View {
 
             // Get more events if necessary. We want to store the events 3 months beforehand. Get
             // events only when it is the first iteration of the loop.
-            if (mEventRects == null || mRefreshEvents ||
+            if (!isInEditMode() && (mEventRects == null || mRefreshEvents ||
                     (dayNumber == leftDaysWithGaps + 1 && mFetchedPeriod != (int) mWeekViewLoader.toWeekViewPeriodIndex(day) &&
-                            Math.abs(mFetchedPeriod - mWeekViewLoader.toWeekViewPeriodIndex(day)) > 0.5)) {
+                            Math.abs(mFetchedPeriod - mWeekViewLoader.toWeekViewPeriodIndex(day)) > 0.5))) {
                 getMoreEvents(day);
                 mRefreshEvents = false;
             }
@@ -937,7 +941,7 @@ public class WeekView extends View {
         canvas.clipRect(0, 0, mTimeTextWidth + mHeaderColumnPadding * 2, mHeaderHeight + mHeaderRowPadding * 2);
         canvas.drawRect(0, 0, mTimeTextWidth + mHeaderColumnPadding * 2, mHeaderHeight + mHeaderRowPadding * 2, mHeaderBackgroundPaint);
         canvas.restore();
-        
+
         // Clip to paint header row only.
         canvas.save();
         canvas.clipRect(mHeaderColumnWidth, 0, getWidth(), mHeaderHeight + mHeaderRowPadding * 2);
@@ -1280,9 +1284,9 @@ public class WeekView extends View {
             mFetchedPeriod = -1;
         }
 
-        if (mWeekViewLoader != null) {
+        if (mWeekViewLoader != null && !isInEditMode()) {
             int periodToFetch = (int) mWeekViewLoader.toWeekViewPeriodIndex(day);
-            if (!isInEditMode() && (mFetchedPeriod < 0 || mFetchedPeriod != periodToFetch || mRefreshEvents)) {
+            if (mFetchedPeriod < 0 || mFetchedPeriod != periodToFetch || mRefreshEvents) {
                 List<? extends WeekViewEvent> newEvents = mWeekViewLoader.onLoad(periodToFetch);
 
                 // Clear events.
