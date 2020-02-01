@@ -2,7 +2,14 @@ package com.alamkanak.weekview;
 
 import android.content.Context;
 import android.content.res.TypedArray;
-import android.graphics.*;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.PointF;
+import android.graphics.Rect;
+import android.graphics.RectF;
+import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -11,18 +18,37 @@ import android.support.annotation.RequiresApi;
 import android.support.v4.view.GestureDetectorCompat;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.view.animation.FastOutLinearInInterpolator;
-import android.text.*;
+import android.text.Layout;
+import android.text.SpannableStringBuilder;
+import android.text.StaticLayout;
+import android.text.TextPaint;
+import android.text.TextUtils;
 import android.text.format.DateFormat;
 import android.text.style.StyleSpan;
 import android.util.AttributeSet;
 import android.util.TypedValue;
-import android.view.*;
+import android.view.DragEvent;
+import android.view.GestureDetector;
+import android.view.HapticFeedbackConstants;
+import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
+import android.view.SoundEffectConstants;
+import android.view.View;
+import android.view.ViewConfiguration;
 import android.widget.OverScroller;
 
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
 
-import static com.alamkanak.weekview.WeekViewUtil.*;
+import static com.alamkanak.weekview.WeekViewUtil.daysBetween;
+import static com.alamkanak.weekview.WeekViewUtil.getPassedMinutesInDay;
+import static com.alamkanak.weekview.WeekViewUtil.isSameDay;
+import static com.alamkanak.weekview.WeekViewUtil.today;
 
 /**
  * Created by Raquib-ul-Alam Kanak on 7/21/2014.
@@ -38,6 +64,12 @@ public class WeekView extends View {
     public static final int LENGTH_SHORT = 1;
     @Deprecated
     public static final int LENGTH_LONG = 2;
+
+    public static final int ADDITIONAL_INFO_NONE = 0;
+    public static final int ADDITIONAL_INFO_YEAR = 1;
+    public static final int ADDITIONAL_INFO_MONTH = 2;
+    public static final int ADDITIONAL_INFO_WEEK = 3;
+
     private final Context mContext;
     private Calendar mHomeDate;
     private Calendar mMinDate;
@@ -147,6 +179,7 @@ public class WeekView extends View {
     private boolean mAutoLimitTime = false;
     private boolean mEnableDropListener = false;
     private int mMinOverlappingMinutes = 0;
+    private int mAdditionalTimeInfo = ADDITIONAL_INFO_NONE;
 
     // Listeners.
     private EventClickListener mEventClickListener;
@@ -940,6 +973,7 @@ public class WeekView extends View {
 
         // Draw the header row texts.
         startPixel = startFromPixel;
+        drawAdditionalInfo(canvas, leftDaysWithGaps, startPixel);
         for (int dayNumber = leftDaysWithGaps + 1; dayNumber <= leftDaysWithGaps + getRealNumberOfVisibleDays() + 1; dayNumber++) {
             // Check if the day is today.
             day = (Calendar) mHomeDate.clone();
@@ -959,6 +993,27 @@ public class WeekView extends View {
             startPixel += mWidthPerDay + mColumnGap;
         }
 
+    }
+
+    private void drawAdditionalInfo(Canvas canvas, int leftDaysWithGaps, float startPixel) {
+        if (mAdditionalTimeInfo != ADDITIONAL_INFO_NONE) {
+            String pattern;
+            switch (mAdditionalTimeInfo) {
+                case ADDITIONAL_INFO_MONTH:
+                    pattern = "MMM";
+                    break;
+                case ADDITIONAL_INFO_WEEK:
+                    pattern = "ww";
+                    break;
+                default:
+                    pattern = "YYYY";
+                    break;
+            }
+            Calendar firstVisibleDay = (Calendar) mHomeDate.clone();
+            firstVisibleDay.add(Calendar.DATE, leftDaysWithGaps);
+            canvas.drawText(new SimpleDateFormat(pattern, Locale.getDefault()).format(firstVisibleDay.getTime()),
+                    startPixel - mHeaderColumnWidth / 2, mHeaderTextHeight + mHeaderRowPadding, mHeaderTextPaint);
+        }
     }
 
     /**
@@ -2532,6 +2587,20 @@ public class WeekView extends View {
 
     public int getMinOverlappingMinutes() {
         return this.mMinOverlappingMinutes;
+    }
+
+    /**
+     * Sets which information should be displayed in addition in the header next to the week day names
+     *
+     * @param additionalTimeInfo the info which should be displayed, one of {@literal ADDITIONAL_INFO_NONE},
+     * {@literal ADDITIONAL_INFO_YEAR}, {@literal ADDITIONAL_INFO_MONTH}, {@literal ADDITIONAL_INFO_WEEK}
+     */
+    public void setAdditionalTimeInfo(int additionalTimeInfo) {
+        this.mAdditionalTimeInfo = additionalTimeInfo;
+    }
+
+    public int getAdditionalTimeInfo() {
+        return this.mAdditionalTimeInfo;
     }
 
     /////////////////////////////////////////////////////////////////
