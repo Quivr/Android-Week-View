@@ -1006,7 +1006,7 @@ public class WeekView extends View {
                     pattern = "ww";
                     break;
                 default:
-                    pattern = "YYYY";
+                    pattern = "yyyy";
                     break;
             }
             Calendar firstVisibleDay = (Calendar) mHomeDate.clone();
