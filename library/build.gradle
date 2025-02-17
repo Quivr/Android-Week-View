@@ -5,12 +5,13 @@ repositories {
 }
 
 android {
-    compileSdkVersion 25
+    namespace "com.alamkanak.weekview"
+    compileSdkVersion 34
     buildToolsVersion '25.0.2'
 
     defaultConfig {
         minSdkVersion 9
-        targetSdkVersion 25
+        targetSdkVersion 34
     }
 }
 
@@ -18,8 +19,8 @@ configurations {
     javadocDeps
 }
 dependencies {
-    compile 'com.android.support:appcompat-v7:25.1.0'
-    javadocDeps 'com.android.support:appcompat-v7:25.1.0'
+    implementation 'androidx.appcompat:appcompat:1.4.2'
+    // javadocDeps 'com.android.support:appcompat-v7:25.1.0'
 }
 
-apply from: 'gradle-mvn-push.gradle'
+// apply from: 'gradle-mvn-push.gradle'

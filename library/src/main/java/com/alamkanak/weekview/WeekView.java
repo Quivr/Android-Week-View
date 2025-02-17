@@ -6,11 +6,11 @@ import android.graphics.*;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.support.annotation.Nullable;
-import android.support.annotation.RequiresApi;
-import android.support.v4.view.GestureDetectorCompat;
-import android.support.v4.view.ViewCompat;
-import android.support.v4.view.animation.FastOutLinearInInterpolator;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+import androidx.core.view.GestureDetectorCompat;
+import androidx.core.view.ViewCompat;
+import androidx.interpolator.view.animation.FastOutLinearInInterpolator;
 import android.text.*;
 import android.text.format.DateFormat;
 import android.text.style.StyleSpan;
@@ -83,6 +83,7 @@ public class WeekView extends View {
     private int mScaledTouchSlop = 0;
     private EventRect mNewEventRect;
     private TextColorPicker textColorPicker;
+    private boolean creatingNewEvent = false;
 
     // Attributes and their default values.
     private int mHourHeight = 50;
@@ -304,74 +305,7 @@ public class WeekView extends View {
                 return super.onSingleTapConfirmed(e);
             }
 
-            // If the tap was on an empty space, then trigger the callback.
-            if ((mEmptyViewClickListener != null || mAddEventClickListener != null) && e.getX() > mHeaderColumnWidth && e.getY() > (mHeaderHeight + mHeaderRowPadding * 2 + mHeaderMarginBottom)) {
-                Calendar selectedTime = getTimeFromPoint(e.getX(), e.getY());
 
-                if (selectedTime != null) {
-                    List<WeekViewEvent> tempEvents = new ArrayList<>(mEvents);
-                    if (mNewEventRect != null) {
-                        tempEvents.remove(mNewEventRect.event);
-                        mNewEventRect = null;
-                    }
-
-                    playSoundEffect(SoundEffectConstants.CLICK);
-
-                    if (mEmptyViewClickListener != null)
-                        mEmptyViewClickListener.onEmptyViewClicked((Calendar) selectedTime.clone());
-
-                    if (mAddEventClickListener != null) {
-                        //round selectedTime to resolution
-                        selectedTime.add(Calendar.MINUTE, -(mNewEventLengthInMinutes / 2));
-                        //Fix selected time if before the minimum hour
-                        if (selectedTime.get(Calendar.HOUR_OF_DAY) < mMinTime) {
-                            selectedTime.set(Calendar.HOUR_OF_DAY, mMinTime);
-                            selectedTime.set(Calendar.MINUTE, 0);
-                        }
-                        int unroundedMinutes = selectedTime.get(Calendar.MINUTE);
-                        int mod = unroundedMinutes % mNewEventTimeResolutionInMinutes;
-                        selectedTime.add(Calendar.MINUTE, mod < Math.ceil(mNewEventTimeResolutionInMinutes / 2) ? -mod : (mNewEventTimeResolutionInMinutes - mod));
-
-                        Calendar endTime = (Calendar) selectedTime.clone();
-
-                        //Minus one to ensure it is the same day and not midnight (next day)
-                        int maxMinutes = (mMaxTime - selectedTime.get(Calendar.HOUR_OF_DAY)) * 60 - selectedTime.get(Calendar.MINUTE) - 1;
-                        endTime.add(Calendar.MINUTE, Math.min(maxMinutes, mNewEventLengthInMinutes));
-                        //If clicked at end of the day, fix selected startTime
-                        if (maxMinutes < mNewEventLengthInMinutes) {
-                            selectedTime.add(Calendar.MINUTE, maxMinutes - mNewEventLengthInMinutes);
-                        }
-
-                        WeekViewEvent newEvent = new WeekViewEvent(mNewEventIdentifier, "", null, selectedTime, endTime);
-
-                        float top = mHourHeight * getPassedMinutesInDay(selectedTime) / 60 + getEventsTop();
-                        float bottom = mHourHeight * getPassedMinutesInDay(endTime) / 60 + getEventsTop();
-
-                        // Calculate left and right.
-                        float left = mWidthPerDay * WeekViewUtil.daysBetween(getFirstVisibleDay(), selectedTime);
-                        float right = left + mWidthPerDay;
-
-                        // Add the new event if its bounds are valid
-                        if (left < right &&
-                                left < getWidth() &&
-                                top < getHeight() &&
-                                right > mHeaderColumnWidth &&
-                                bottom > 0
-                                ) {
-                            RectF dayRectF = new RectF(left, top, right, bottom - mCurrentOrigin.y);
-                            newEvent.setColor(mNewEventColor);
-                            mNewEventRect = new EventRect(newEvent, newEvent, dayRectF);
-                            tempEvents.add(newEvent);
-                            WeekView.this.clearEvents();
-                            cacheAndSortEvents(tempEvents);
-                            computePositionOfEvents(mEventRects);
-                            invalidate();
-                        }
-
-                    }
-                }
-
-            }
             return super.onSingleTapConfirmed(e);
         }
 
@@ -390,6 +324,12 @@ public class WeekView extends View {
                         return;
                     }
                 }
+            }
+
+            // If the tap was on an empty space, then trigger the callback.
+            if ((mEmptyViewClickListener != null || mAddEventClickListener != null) && e.getX() > mHeaderColumnWidth && e.getY() > (mHeaderHeight + mHeaderRowPadding * 2 + mHeaderMarginBottom)) {
+                Calendar selectedTime = getTimeFromPoint(e.getX(), e.getY());
+                startNewEventAdding(selectedTime);
             }
 
             // If the tap was on in an empty space, then trigger the callback.
@@ -1082,7 +1022,7 @@ public class WeekView extends View {
                         mEventRects.get(i).rectF = new RectF(left, top, right, bottom);
                         mEventBackgroundPaint.setColor(mEventRects.get(i).event.getColor() == 0 ? mDefaultEventColor : mEventRects.get(i).event.getColor());
                         mEventBackgroundPaint.setShader(mEventRects.get(i).event.getShader());
-                        canvas.drawRoundRect(mEventRects.get(i).rectF, mEventCornerRadius, mEventCornerRadius, mEventBackgroundPaint);
+                        canvas.drawRoundRect(mEventRects.get(i).rectF, 30, 30, mEventBackgroundPaint);
                         float topToUse = top;
                         if (mEventRects.get(i).event.getStartTime().get(Calendar.HOUR_OF_DAY) < mMinTime)
                             topToUse = mHourHeight * getPassedMinutesInDay(mMinTime, 0) / 60 + getEventsTop();
@@ -2560,6 +2500,7 @@ public class WeekView extends View {
             leftDays = Math.round(leftDays);
         }
 
+
         int nearestOrigin = (int) (mCurrentOrigin.x - leftDays * (mWidthPerDay + mColumnGap));
         boolean mayScrollHorizontal = mCurrentOrigin.x - nearestOrigin < getXMaxLimit()
                 && mCurrentOrigin.x - nearestOrigin > getXMinLimit();
@@ -2712,6 +2653,72 @@ public class WeekView extends View {
             return false;
         }
         return true;
+    }
+
+    private void startNewEventAdding(Calendar selectedTime) {
+        if (selectedTime != null) {
+            List<WeekViewEvent> tempEvents = new ArrayList<>(mEvents);
+            if (mNewEventRect != null) {
+                tempEvents.remove(mNewEventRect.event);
+                mNewEventRect = null;
+            }
+
+            playSoundEffect(SoundEffectConstants.CLICK);
+
+            if (mEmptyViewClickListener != null)
+                mEmptyViewClickListener.onEmptyViewClicked((Calendar) selectedTime.clone());
+
+            if (mAddEventClickListener != null) {
+                //round selectedTime to resolution
+                selectedTime.add(Calendar.MINUTE, -(mNewEventLengthInMinutes / 2));
+                //Fix selected time if before the minimum hour
+                if (selectedTime.get(Calendar.HOUR_OF_DAY) < mMinTime) {
+                    selectedTime.set(Calendar.HOUR_OF_DAY, mMinTime);
+                    selectedTime.set(Calendar.MINUTE, 0);
+                }
+                int unroundedMinutes = selectedTime.get(Calendar.MINUTE);
+                int mod = unroundedMinutes % mNewEventTimeResolutionInMinutes;
+                selectedTime.add(Calendar.MINUTE, mod < Math.ceil(mNewEventTimeResolutionInMinutes / 2) ? -mod : (mNewEventTimeResolutionInMinutes - mod));
+
+                Calendar endTime = (Calendar) selectedTime.clone();
+
+                //Minus one to ensure it is the same day and not midnight (next day)
+                int maxMinutes = (mMaxTime - selectedTime.get(Calendar.HOUR_OF_DAY)) * 60 - selectedTime.get(Calendar.MINUTE) - 1;
+                endTime.add(Calendar.MINUTE, Math.min(maxMinutes, mNewEventLengthInMinutes));
+                //If clicked at end of the day, fix selected startTime
+                if (maxMinutes < mNewEventLengthInMinutes) {
+                    selectedTime.add(Calendar.MINUTE, maxMinutes - mNewEventLengthInMinutes);
+                }
+
+                WeekViewEvent newEvent = new WeekViewEvent(mNewEventIdentifier, "", null, selectedTime, endTime);
+
+                float top = mHourHeight * getPassedMinutesInDay(selectedTime) / 60 + getEventsTop();
+                float bottom = mHourHeight * getPassedMinutesInDay(endTime) / 60 + getEventsTop();
+
+                // Calculate left and right.
+                float left = mWidthPerDay * WeekViewUtil.daysBetween(getFirstVisibleDay(), selectedTime);
+                float right = left + mWidthPerDay;
+
+                // Add the new event if its bounds are valid
+                if (left < right &&
+                        left < getWidth() &&
+                        top < getHeight() &&
+                        right > mHeaderColumnWidth &&
+                        bottom > 0
+                ) {
+                    RectF dayRectF = new RectF(left, top, right, bottom - mCurrentOrigin.y);
+                    newEvent.setColor(mNewEventColor);
+                    creatingNewEvent = true;
+                    mNewEventRect = new EventRect(newEvent, newEvent, dayRectF);
+                    tempEvents.add(newEvent);
+                    WeekView.this.clearEvents();
+                    cacheAndSortEvents(tempEvents);
+                    computePositionOfEvents(mEventRects);
+                    invalidate();
+                }
+
+            }
+        }
     }
 
     /////////////////////////////////////////////////////////////////

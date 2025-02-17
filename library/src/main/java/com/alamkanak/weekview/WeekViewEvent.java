@@ -1,7 +1,7 @@
 package com.alamkanak.weekview;
 
 import android.graphics.Shader;
-import android.support.annotation.ColorInt;
+import androidx.annotation.ColorInt;
 
 import java.util.ArrayList;
 import java.util.Calendar;
