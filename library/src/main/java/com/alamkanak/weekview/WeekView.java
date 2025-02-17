@@ -2660,7 +2660,6 @@ public class WeekView extends View {
             List<WeekViewEvent> tempEvents = new ArrayList<>(mEvents);
             if (mNewEventRect != null) {
                 tempEvents.remove(mNewEventRect.event);
-                mNewEventRect = null;
             }
 
             playSoundEffect(SoundEffectConstants.CLICK);
