@@ -148,6 +148,7 @@ public class WeekView extends View {
     private boolean mAutoLimitTime = false;
     private boolean mEnableDropListener = false;
     private int mMinOverlappingMinutes = 0;
+    private MotionEvent mNewEventLastTouch;
 
     // Listeners.
     private EventClickListener mEventClickListener;
@@ -329,7 +330,7 @@ public class WeekView extends View {
             // If the tap was on an empty space, then trigger the callback.
             if ((mEmptyViewClickListener != null || mAddEventClickListener != null) && e.getX() > mHeaderColumnWidth && e.getY() > (mHeaderHeight + mHeaderRowPadding * 2 + mHeaderMarginBottom)) {
                 Calendar selectedTime = getTimeFromPoint(e.getX(), e.getY());
-                startNewEventAdding(selectedTime);
+                startNewEventAdding(selectedTime, e);
             }
 
             // If the tap was on in an empty space, then trigger the callback.
@@ -2462,6 +2463,35 @@ public class WeekView extends View {
         mScaleDetector.onTouchEvent(event);
         boolean val = mGestureDetector.onTouchEvent(event);
 
+        if (event.getAction() == MotionEvent.ACTION_UP && creatingNewEvent) {
+            List<WeekViewEvent> tempEvents = new ArrayList<>();
+            for (WeekViewEvent e : mEvents) {
+                if (e != mNewEventRect.event) {
+                    tempEvents.add(e);
+                }
+            }
+            creatingNewEvent = false;
+            mNewEventRect = null;
+            WeekView.this.clearEvents();
+            cacheAndSortEvents(tempEvents);
+            computePositionOfEvents(mEventRects);
+            invalidate();
+        }
+
+        if (event.getAction() == MotionEvent.ACTION_MOVE && creatingNewEvent) {
+            startNewEventAdding(getTimeFromPoint(event.getX(), event.getY()), event);
+        }
+
+        /*
+        if (creatingNewEvent){
+            mNewEventRect.top += distanceY;
+            mNewEventRect.bottom += distanceY;
+            computePositionOfEvents(mEventRects);
+            invalidate();
+            return true;
+        }
+        */
+
         // Check after call of mGestureDetector, so mCurrentFlingDirection and mCurrentScrollDirection are set.
         if (event.getAction() == MotionEvent.ACTION_UP && !mIsZooming && mCurrentFlingDirection == Direction.NONE) {
             if (mCurrentScrollDirection == Direction.RIGHT || mCurrentScrollDirection == Direction.LEFT) {
@@ -2655,7 +2685,7 @@ public class WeekView extends View {
         return true;
     }
 
-    private void startNewEventAdding(Calendar selectedTime) {
+    private void startNewEventAdding(Calendar selectedTime, MotionEvent e) {
         if (selectedTime != null) {
             List<WeekViewEvent> tempEvents = new ArrayList<>(mEvents);
             if (mNewEventRect != null) {
@@ -2713,6 +2743,8 @@ public class WeekView extends View {
                     WeekView.this.clearEvents();
                     cacheAndSortEvents(tempEvents);
                     computePositionOfEvents(mEventRects);
+                    mNewEventLastTouch = e;
+
                     invalidate();
                 }
 
