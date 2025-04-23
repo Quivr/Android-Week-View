@@ -18,6 +18,7 @@ import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.*;
 import android.widget.OverScroller;
+import android.util.Log;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -32,6 +33,10 @@ public class WeekView extends View {
 
     private enum Direction {
         NONE, LEFT, RIGHT, VERTICAL
+    }
+
+    private enum NewEventScrollDirection {
+        NONE, UP, DOWN
     }
 
     @Deprecated
@@ -81,9 +86,10 @@ public class WeekView extends View {
     private Calendar mLastVisibleDay;
     private int mMinimumFlingVelocity = 0;
     private int mScaledTouchSlop = 0;
-    private EventRect mNewEventRect;
     private TextColorPicker textColorPicker;
+    private EventRect mNewEventRect;
     private boolean creatingNewEvent = false;
+    private NewEventScrollDirection mCurrentNewEventScrollDirection = NewEventScrollDirection.NONE;
 
     // Attributes and their default values.
     private int mHourHeight = 50;
@@ -149,6 +155,7 @@ public class WeekView extends View {
     private boolean mEnableDropListener = false;
     private int mMinOverlappingMinutes = 0;
     private MotionEvent mNewEventLastTouch;
+    private int mNewEventVerticalScrollDuration = 100;
 
     // Listeners.
     private EventClickListener mEventClickListener;
@@ -173,7 +180,20 @@ public class WeekView extends View {
         @Override
         public boolean onSingleTapUp(MotionEvent e){
             goToNearestOrigin();
-            return false;
+
+            // If the tap was on an event then trigger the callback.
+            if (mEventRects != null && mEventClickListener != null) {
+                List<EventRect> reversedEventRects = mEventRects;
+                Collections.reverse(reversedEventRects);
+                for (EventRect eventRect : reversedEventRects) {
+                    if (!mNewEventIdentifier.equals(eventRect.event.getIdentifier()) && eventRect.rectF != null && e.getX() > eventRect.rectF.left && e.getX() < eventRect.rectF.right && e.getY() > eventRect.rectF.top && e.getY() < eventRect.rectF.bottom) {
+                        mEventClickListener.onEventClick(eventRect.originalEvent, eventRect.rectF);
+                        playSoundEffect(SoundEffectConstants.CLICK);
+                    }
+                }
+            }
+
+            return super.onSingleTapUp(e);
         }
 
         @Override
@@ -279,38 +299,6 @@ public class WeekView extends View {
 
 
         @Override
-        public boolean onSingleTapConfirmed(MotionEvent e) {
-            goToNearestOrigin();
-
-            // If the tap was on an event then trigger the callback.
-            if (mEventRects != null && mEventClickListener != null) {
-                List<EventRect> reversedEventRects = mEventRects;
-                Collections.reverse(reversedEventRects);
-                for (EventRect eventRect : reversedEventRects) {
-                    if (!mNewEventIdentifier.equals(eventRect.event.getIdentifier()) && eventRect.rectF != null && e.getX() > eventRect.rectF.left && e.getX() < eventRect.rectF.right && e.getY() > eventRect.rectF.top && e.getY() < eventRect.rectF.bottom) {
-                        mEventClickListener.onEventClick(eventRect.originalEvent, eventRect.rectF);
-                        playSoundEffect(SoundEffectConstants.CLICK);
-                        return super.onSingleTapConfirmed(e);
-                    }
-                }
-            }
-
-            float xOffset = getXStartPixel();
-
-            float x = e.getX() - xOffset;
-            float y = e.getY() - mCurrentOrigin.y;
-            // If the tap was on add new Event space, then trigger the callback
-            if (mAddEventClickListener != null && mNewEventRect != null && mNewEventRect.rectF != null &&
-                    mNewEventRect.rectF.contains(x, y)) {
-                mAddEventClickListener.onAddEventClicked(mNewEventRect.event.getStartTime(), mNewEventRect.event.getEndTime());
-                return super.onSingleTapConfirmed(e);
-            }
-
-
-            return super.onSingleTapConfirmed(e);
-        }
-
-        @Override
         public void onLongPress(MotionEvent e) {
             super.onLongPress(e);
             goToNearestOrigin();
@@ -329,8 +317,7 @@ public class WeekView extends View {
 
             // If the tap was on an empty space, then trigger the callback.
             if ((mEmptyViewClickListener != null || mAddEventClickListener != null) && e.getX() > mHeaderColumnWidth && e.getY() > (mHeaderHeight + mHeaderRowPadding * 2 + mHeaderMarginBottom)) {
-                Calendar selectedTime = getTimeFromPoint(e.getX(), e.getY());
-                startNewEventAdding(selectedTime, e);
+                startNewEventAdding(e);
             }
 
             // If the tap was on in an empty space, then trigger the callback.
@@ -658,7 +645,7 @@ public class WeekView extends View {
         canvas.save();
         canvas.clipRect(0, mHeaderHeight + mHeaderRowPadding * 2, mHeaderColumnWidth, getHeight());
         canvas.restore();
-        
+
         for (int i = 0; i < getNumberOfPeriods(); i++) {
             // If we are showing half hours (eg. 5:30am), space the times out by half the hour height
             // and need to provide 30 minutes on each odd period, otherwise, minutes is always 0.
@@ -878,7 +865,7 @@ public class WeekView extends View {
         canvas.clipRect(0, 0, mTimeTextWidth + mHeaderColumnPadding * 2, mHeaderHeight + mHeaderRowPadding * 2);
         canvas.drawRect(0, 0, mTimeTextWidth + mHeaderColumnPadding * 2, mHeaderHeight + mHeaderRowPadding * 2, mHeaderBackgroundPaint);
         canvas.restore();
-        
+
         // Clip to paint header row only.
         canvas.save();
         canvas.clipRect(mHeaderColumnWidth, 0, getWidth(), mHeaderHeight + mHeaderRowPadding * 2);
@@ -2464,33 +2451,35 @@ public class WeekView extends View {
         boolean val = mGestureDetector.onTouchEvent(event);
 
         if (event.getAction() == MotionEvent.ACTION_UP && creatingNewEvent) {
-            List<WeekViewEvent> tempEvents = new ArrayList<>();
-            for (WeekViewEvent e : mEvents) {
-                if (e != mNewEventRect.event) {
-                    tempEvents.add(e);
-                }
-            }
+            mAddEventClickListener.onAddEventClicked(mNewEventRect.event.getStartTime(), mNewEventRect.event.getEndTime());
+            removeNewEvent();
             creatingNewEvent = false;
-            mNewEventRect = null;
-            WeekView.this.clearEvents();
-            cacheAndSortEvents(tempEvents);
-            computePositionOfEvents(mEventRects);
-            invalidate();
         }
 
         if (event.getAction() == MotionEvent.ACTION_MOVE && creatingNewEvent) {
-            startNewEventAdding(getTimeFromPoint(event.getX(), event.getY()), event);
-        }
+            mNewEventLastTouch = MotionEvent.obtain(event);
+            startNewEventAdding(event);
 
-        /*
-        if (creatingNewEvent){
-            mNewEventRect.top += distanceY;
-            mNewEventRect.bottom += distanceY;
-            computePositionOfEvents(mEventRects);
-            invalidate();
-            return true;
+            // If the event is close to the top of the weekview, start scrolling higher
+            float pixelsFromZero = event.getY() - mHeaderHeight
+                    - mHeaderRowPadding * 2 - mTimeTextHeight / 2 - mHeaderMarginBottom;
+            if (pixelsFromZero < mHourHeight) {
+                if (mCurrentNewEventScrollDirection == NewEventScrollDirection.NONE) {
+                    mCurrentNewEventScrollDirection = NewEventScrollDirection.UP;
+                    int distance = (int) getYMaxLimit() - (int) mCurrentOrigin.y;
+                    mScroller.startScroll((int) mCurrentOrigin.x, (int) mCurrentOrigin.y, 0,distance, Math.abs(distance / mHourHeight * mNewEventVerticalScrollDuration));
+                }
+            } else if (event.getY() > getHeight() - mHourHeight) {
+                if (mCurrentNewEventScrollDirection == NewEventScrollDirection.NONE) {
+                    mCurrentNewEventScrollDirection = NewEventScrollDirection.DOWN;
+                    int distance = (int) getYMinLimit() - (int) mCurrentOrigin.y;
+                    mScroller.startScroll((int) mCurrentOrigin.x, (int) mCurrentOrigin.y, 0, distance, Math.abs(distance / mHourHeight * mNewEventVerticalScrollDuration));
+                }
+            } else if (mCurrentNewEventScrollDirection == NewEventScrollDirection.UP || mCurrentNewEventScrollDirection == NewEventScrollDirection.DOWN) {
+                mCurrentNewEventScrollDirection = NewEventScrollDirection.NONE;
+                mScroller.forceFinished(true);
+            }
         }
-        */
 
         // Check after call of mGestureDetector, so mCurrentFlingDirection and mCurrentScrollDirection are set.
         if (event.getAction() == MotionEvent.ACTION_UP && !mIsZooming && mCurrentFlingDirection == Direction.NONE) {
@@ -2555,6 +2544,9 @@ public class WeekView extends View {
     @Override
     public void computeScroll() {
         super.computeScroll();
+        if (creatingNewEvent && mNewEventLastTouch != null) {
+            updateNewEvent(mNewEventLastTouch);
+        }
 
         if (mScroller.isFinished()) {
             if (mCurrentFlingDirection != Direction.NONE) {
@@ -2685,17 +2677,15 @@ public class WeekView extends View {
         return true;
     }
 
-    private void startNewEventAdding(Calendar selectedTime, MotionEvent e) {
+    private void updateNewEvent(MotionEvent e) {
+        Log.d("QuivrWeekView", String.format("updateNewEvent: %s%n", e.toString()));
+        Calendar selectedTime = getTimeFromPoint(e.getX(), e.getY());
         if (selectedTime != null) {
             List<WeekViewEvent> tempEvents = new ArrayList<>(mEvents);
             if (mNewEventRect != null) {
                 tempEvents.remove(mNewEventRect.event);
             }
 
-            playSoundEffect(SoundEffectConstants.CLICK);
-
-            if (mEmptyViewClickListener != null)
-                mEmptyViewClickListener.onEmptyViewClicked((Calendar) selectedTime.clone());
 
             if (mAddEventClickListener != null) {
                 //round selectedTime to resolution
@@ -2717,6 +2707,11 @@ public class WeekView extends View {
                 //If clicked at end of the day, fix selected startTime
                 if (maxMinutes < mNewEventLengthInMinutes) {
                     selectedTime.add(Calendar.MINUTE, maxMinutes - mNewEventLengthInMinutes);
+                }
+
+                if (mNewEventRect != null && mNewEventRect.event.getStartTime().equals(selectedTime) &&
+                        mNewEventRect.event.getEndTime().equals(endTime)) {
+                    return;
                 }
 
                 WeekViewEvent newEvent = new WeekViewEvent(mNewEventIdentifier, "", null, selectedTime, endTime);
@@ -2743,13 +2738,35 @@ public class WeekView extends View {
                     WeekView.this.clearEvents();
                     cacheAndSortEvents(tempEvents);
                     computePositionOfEvents(mEventRects);
-                    mNewEventLastTouch = e;
-
                     invalidate();
                 }
-
             }
         }
+    }
+
+    private void removeNewEvent() {
+        List<WeekViewEvent> tempEvents = new ArrayList<>();
+        for (WeekViewEvent e : mEvents) {
+            if (e != mNewEventRect.event) {
+                tempEvents.add(e);
+            }
+        }
+        mNewEventRect = null;
+        WeekView.this.clearEvents();
+        cacheAndSortEvents(tempEvents);
+        computePositionOfEvents(mEventRects);
+        invalidate();
+    }
+
+    private void startNewEventAdding(MotionEvent e) {
+        playSoundEffect(SoundEffectConstants.CLICK);
+
+        Calendar selectedTime = getTimeFromPoint(e.getX(), e.getY());
+        if (mEmptyViewClickListener != null && selectedTime != null)
+            mEmptyViewClickListener.onEmptyViewClicked((Calendar) selectedTime.clone());
+
+        mNewEventLastTouch = MotionEvent.obtain(e);
+        updateNewEvent(e);
     }
 
     /////////////////////////////////////////////////////////////////
