@@ -182,6 +182,7 @@ public class WeekView extends View {
 
         @Override
         public boolean onSingleTapUp(MotionEvent e){
+            Log.d("QuivrWeekView", "singleTapUp");
             goToNearestOrigin();
             boolean wasEmptyClick = true;
             boolean doRemoveNewEvent = false;
@@ -217,8 +218,13 @@ public class WeekView extends View {
             return super.onSingleTapUp(e);
         }
 
+
         @Override
         public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+            EventRect newEventRectWithCorrectDims = getNewEventRectWithCorrectDims();
+            if ((movingNewEvent) || (creatingNewEvent && mNewEventRect != null && newEventRectWithCorrectDims != null && newEventRectWithCorrectDims.rectF != null && newEventRectWithCorrectDims.rectF.contains(e1.getX(),e1.getY()))) {
+                return true;
+            }
             // Check if view is zoomed.
             if (mIsZooming)
                 return true;
@@ -347,6 +353,12 @@ public class WeekView extends View {
             }
         }
     };
+
+    public EventRect getNewEventRectWithCorrectDims() {
+        Optional<EventRect> newEventRectWithCorrectDims = mEventRects.stream().filter(r -> r.event.getIdentifier().equals(getNewEventIdentifier())).findFirst();
+        return newEventRectWithCorrectDims.orElse(null);
+    }
+
 
     public WeekView(Context context) {
         this(context, null);
@@ -1232,6 +1244,9 @@ public class WeekView extends View {
 
                 // Clear events.
                 this.clearEvents();
+                if (mNewEventRect != null) {
+                    cacheEvent(mNewEventRect.event);
+                }
                 cacheAndSortEvents(newEvents);
                 calculateHeaderHeight();
 
@@ -2466,13 +2481,19 @@ public class WeekView extends View {
     public boolean onTouchEvent(MotionEvent event) {
         mScaleDetector.onTouchEvent(event);
         boolean val = mGestureDetector.onTouchEvent(event);
+        EventRect newEventRect = getNewEventRectWithCorrectDims();
+        if (event.getAction() == MotionEvent.ACTION_DOWN && creatingNewEvent && newEventRect != null && newEventRect.rectF != null && newEventRect.rectF.contains(event.getX(), event.getY())) {
+            Log.d("QuivrWeekView", String.format("rectF: %s%n", mNewEventRect.rectF.toString()));
+            Log.d("QuivrWeekView", String.format("event: %s%n", event.toString()));
+            movingNewEvent = true;
+            startNewEventAdding(event);
+        }
 
         if (event.getAction() == MotionEvent.ACTION_UP && movingNewEvent) {
-            // TODO
+            movingNewEvent = false;
         }
 
         if (event.getAction() == MotionEvent.ACTION_MOVE && movingNewEvent) {
-            mNewEventLastTouch = MotionEvent.obtain(event);
             startNewEventAdding(event);
 
             // If the event is close to the top of the weekview, start scrolling higher
