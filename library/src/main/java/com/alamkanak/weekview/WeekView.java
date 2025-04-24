@@ -87,8 +87,11 @@ public class WeekView extends View {
     private int mMinimumFlingVelocity = 0;
     private int mScaledTouchSlop = 0;
     private TextColorPicker textColorPicker;
+
+    // New event values
     private EventRect mNewEventRect;
     private boolean creatingNewEvent = false;
+    private boolean movingNewEvent = false;
     private NewEventScrollDirection mCurrentNewEventScrollDirection = NewEventScrollDirection.NONE;
 
     // Attributes and their default values.
@@ -180,17 +183,35 @@ public class WeekView extends View {
         @Override
         public boolean onSingleTapUp(MotionEvent e){
             goToNearestOrigin();
+            boolean wasEmptyClick = true;
+            boolean doRemoveNewEvent = false;
 
             // If the tap was on an event then trigger the callback.
             if (mEventRects != null && mEventClickListener != null) {
                 List<EventRect> reversedEventRects = mEventRects;
                 Collections.reverse(reversedEventRects);
                 for (EventRect eventRect : reversedEventRects) {
-                    if (!mNewEventIdentifier.equals(eventRect.event.getIdentifier()) && eventRect.rectF != null && e.getX() > eventRect.rectF.left && e.getX() < eventRect.rectF.right && e.getY() > eventRect.rectF.top && e.getY() < eventRect.rectF.bottom) {
-                        mEventClickListener.onEventClick(eventRect.originalEvent, eventRect.rectF);
-                        playSoundEffect(SoundEffectConstants.CLICK);
+                    if (eventRect.rectF != null && eventRect.rectF.contains(e.getX(), e.getY())) {
+                       if (mNewEventIdentifier.equals(eventRect.event.getIdentifier())) {
+                           mAddEventClickListener.onAddEventClicked(mNewEventRect.event.getStartTime(), mNewEventRect.event.getEndTime());
+                           // Do this later, as we are iterating over this list currently
+                           doRemoveNewEvent = true;
+                           creatingNewEvent = false;
+                       } else {
+                           mEventClickListener.onEventClick(eventRect.originalEvent, eventRect.rectF);
+                           playSoundEffect(SoundEffectConstants.CLICK);
+                       }
+                       wasEmptyClick = false;
                     }
                 }
+            }
+            if (doRemoveNewEvent) {
+                removeNewEvent();
+            }
+
+            // If the tap was on an empty space, then trigger the callback.
+            if (wasEmptyClick && (mEmptyViewClickListener != null || mAddEventClickListener != null) && e.getX() > mHeaderColumnWidth && e.getY() > (mHeaderHeight + mHeaderRowPadding * 2 + mHeaderMarginBottom)) {
+               startNewEventAdding(e);
             }
 
             return super.onSingleTapUp(e);
@@ -315,10 +336,6 @@ public class WeekView extends View {
                 }
             }
 
-            // If the tap was on an empty space, then trigger the callback.
-            if ((mEmptyViewClickListener != null || mAddEventClickListener != null) && e.getX() > mHeaderColumnWidth && e.getY() > (mHeaderHeight + mHeaderRowPadding * 2 + mHeaderMarginBottom)) {
-                startNewEventAdding(e);
-            }
 
             // If the tap was on in an empty space, then trigger the callback.
             if (mEmptyViewLongPressListener != null && e.getX() > mHeaderColumnWidth && e.getY() > (mHeaderHeight + mHeaderRowPadding * 2 + mHeaderMarginBottom)) {
@@ -2450,13 +2467,11 @@ public class WeekView extends View {
         mScaleDetector.onTouchEvent(event);
         boolean val = mGestureDetector.onTouchEvent(event);
 
-        if (event.getAction() == MotionEvent.ACTION_UP && creatingNewEvent) {
-            mAddEventClickListener.onAddEventClicked(mNewEventRect.event.getStartTime(), mNewEventRect.event.getEndTime());
-            removeNewEvent();
-            creatingNewEvent = false;
+        if (event.getAction() == MotionEvent.ACTION_UP && movingNewEvent) {
+            // TODO
         }
 
-        if (event.getAction() == MotionEvent.ACTION_MOVE && creatingNewEvent) {
+        if (event.getAction() == MotionEvent.ACTION_MOVE && movingNewEvent) {
             mNewEventLastTouch = MotionEvent.obtain(event);
             startNewEventAdding(event);
 
@@ -2544,7 +2559,7 @@ public class WeekView extends View {
     @Override
     public void computeScroll() {
         super.computeScroll();
-        if (creatingNewEvent && mNewEventLastTouch != null) {
+        if (movingNewEvent && mNewEventLastTouch != null) {
             updateNewEvent(mNewEventLastTouch);
         }
 
@@ -2747,7 +2762,7 @@ public class WeekView extends View {
     private void removeNewEvent() {
         List<WeekViewEvent> tempEvents = new ArrayList<>();
         for (WeekViewEvent e : mEvents) {
-            if (e != mNewEventRect.event) {
+            if (!mNewEventIdentifier.equals(e.getIdentifier())) {
                 tempEvents.add(e);
             }
         }
@@ -2759,6 +2774,7 @@ public class WeekView extends View {
     }
 
     private void startNewEventAdding(MotionEvent e) {
+        Log.d("QuivrWeekView", "start new event adding!");
         playSoundEffect(SoundEffectConstants.CLICK);
 
         Calendar selectedTime = getTimeFromPoint(e.getX(), e.getY());
