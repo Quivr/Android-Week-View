@@ -176,7 +176,9 @@ public class WeekView extends View {
 
         @Override
         public boolean onDown(MotionEvent e) {
-            stopScrolling();
+            if (!wasOnNewEventRect(e)) {
+                stopScrolling();
+            }
             return true;
         }
 
@@ -221,8 +223,7 @@ public class WeekView extends View {
 
         @Override
         public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-            EventRect newEventRectWithCorrectDims = getNewEventRectWithCorrectDims();
-            if ((movingNewEvent) || (creatingNewEvent && mNewEventRect != null && newEventRectWithCorrectDims != null && newEventRectWithCorrectDims.rectF != null && newEventRectWithCorrectDims.rectF.contains(e1.getX(),e1.getY()))) {
+            if ((movingNewEvent) || (creatingNewEvent && wasOnNewEventRect(e1))) {
                 return true;
             }
             // Check if view is zoomed.
@@ -354,9 +355,10 @@ public class WeekView extends View {
         }
     };
 
-    public EventRect getNewEventRectWithCorrectDims() {
+    public boolean wasOnNewEventRect(MotionEvent e) {
         Optional<EventRect> newEventRectWithCorrectDims = mEventRects.stream().filter(r -> r.event.getIdentifier().equals(getNewEventIdentifier())).findFirst();
-        return newEventRectWithCorrectDims.orElse(null);
+        EventRect eventRect =  newEventRectWithCorrectDims.orElse(null);
+        return eventRect != null && eventRect.rectF != null && eventRect.rectF.contains(e.getX(), e.getY());
     }
 
 
@@ -2479,12 +2481,13 @@ public class WeekView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        // TODO: fix single tap up
+        // TODO: fix horizontal auto scroll when dragging
+        // TODO: fix on drag verspringt bij start dragging -> lost op door verticale drag offset variabele toe te voegen
         mScaleDetector.onTouchEvent(event);
         boolean val = mGestureDetector.onTouchEvent(event);
-        EventRect newEventRect = getNewEventRectWithCorrectDims();
-        if (event.getAction() == MotionEvent.ACTION_DOWN && creatingNewEvent && newEventRect != null && newEventRect.rectF != null && newEventRect.rectF.contains(event.getX(), event.getY())) {
-            Log.d("QuivrWeekView", String.format("rectF: %s%n", mNewEventRect.rectF.toString()));
-            Log.d("QuivrWeekView", String.format("event: %s%n", event.toString()));
+        if (event.getAction() == MotionEvent.ACTION_DOWN && creatingNewEvent && wasOnNewEventRect(event)) {
+            // goToNearestOrigin();
             movingNewEvent = true;
             startNewEventAdding(event);
         }
