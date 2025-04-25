@@ -93,6 +93,7 @@ public class WeekView extends View {
     private boolean creatingNewEvent = false;
     private boolean movingNewEvent = false;
     private NewEventScrollDirection mCurrentNewEventScrollDirection = NewEventScrollDirection.NONE;
+    private float mNewEventDragOffset = 0;
 
     // Attributes and their default values.
     private int mHourHeight = 50;
@@ -183,7 +184,7 @@ public class WeekView extends View {
         }
 
         @Override
-        public boolean onSingleTapUp(MotionEvent e){
+        public boolean onSingleTapUp(MotionEvent e) {
             Log.d("QuivrWeekView", "singleTapUp");
             goToNearestOrigin();
             boolean wasEmptyClick = true;
@@ -195,16 +196,16 @@ public class WeekView extends View {
                 Collections.reverse(reversedEventRects);
                 for (EventRect eventRect : reversedEventRects) {
                     if (eventRect.rectF != null && eventRect.rectF.contains(e.getX(), e.getY())) {
-                       if (mNewEventIdentifier.equals(eventRect.event.getIdentifier())) {
-                           mAddEventClickListener.onAddEventClicked(mNewEventRect.event.getStartTime(), mNewEventRect.event.getEndTime());
-                           // Do this later, as we are iterating over this list currently
-                           doRemoveNewEvent = true;
-                           creatingNewEvent = false;
-                       } else {
-                           mEventClickListener.onEventClick(eventRect.originalEvent, eventRect.rectF);
-                           playSoundEffect(SoundEffectConstants.CLICK);
-                       }
-                       wasEmptyClick = false;
+                        if (mNewEventIdentifier.equals(eventRect.event.getIdentifier())) {
+                            mAddEventClickListener.onAddEventClicked(mNewEventRect.event.getStartTime(), mNewEventRect.event.getEndTime());
+                            // Do this later, as we are iterating over this list currently
+                            doRemoveNewEvent = true;
+                            creatingNewEvent = false;
+                        } else {
+                            mEventClickListener.onEventClick(eventRect.originalEvent, eventRect.rectF);
+                            playSoundEffect(SoundEffectConstants.CLICK);
+                        }
+                        wasEmptyClick = false;
                     }
                 }
             }
@@ -214,7 +215,8 @@ public class WeekView extends View {
 
             // If the tap was on an empty space, then trigger the callback.
             if (wasEmptyClick && (mEmptyViewClickListener != null || mAddEventClickListener != null) && e.getX() > mHeaderColumnWidth && e.getY() > (mHeaderHeight + mHeaderRowPadding * 2 + mHeaderMarginBottom)) {
-               startNewEventAdding(e);
+                mNewEventDragOffset = 0;
+                startNewEventAdding(e);
             }
 
             return super.onSingleTapUp(e);
@@ -355,9 +357,13 @@ public class WeekView extends View {
         }
     };
 
-    public boolean wasOnNewEventRect(MotionEvent e) {
+    private EventRect getNewEventRectWithCorrectDims() {
         Optional<EventRect> newEventRectWithCorrectDims = mEventRects.stream().filter(r -> r.event.getIdentifier().equals(getNewEventIdentifier())).findFirst();
-        EventRect eventRect =  newEventRectWithCorrectDims.orElse(null);
+        return newEventRectWithCorrectDims.orElse(null);
+    }
+
+    public boolean wasOnNewEventRect(MotionEvent e) {
+        EventRect eventRect = getNewEventRectWithCorrectDims();
         return eventRect != null && eventRect.rectF != null && eventRect.rectF.contains(e.getX(), e.getY());
     }
 
@@ -2487,12 +2493,14 @@ public class WeekView extends View {
         mScaleDetector.onTouchEvent(event);
         boolean val = mGestureDetector.onTouchEvent(event);
         if (event.getAction() == MotionEvent.ACTION_DOWN && creatingNewEvent && wasOnNewEventRect(event)) {
-            // goToNearestOrigin();
             movingNewEvent = true;
+            EventRect mNewEventRectCorrectDims = getNewEventRectWithCorrectDims();
+            mNewEventDragOffset = event.getY() - (mNewEventRectCorrectDims.rectF.top + mNewEventRectCorrectDims.rectF.bottom) / 2 ;
             startNewEventAdding(event);
         }
 
         if (event.getAction() == MotionEvent.ACTION_UP && movingNewEvent) {
+            stopScrolling();
             movingNewEvent = false;
         }
 
@@ -2718,7 +2726,9 @@ public class WeekView extends View {
 
     private void updateNewEvent(MotionEvent e) {
         Log.d("QuivrWeekView", String.format("updateNewEvent: %s%n", e.toString()));
-        Calendar selectedTime = getTimeFromPoint(e.getX(), e.getY());
+        Log.d("QuivrWeekView", String.format(Float.valueOf(mNewEventDragOffset).toString()));
+        Log.d("QuivrWeekView", String.format(Float.valueOf(e.getY()).toString()));
+        Calendar selectedTime = getTimeFromPoint(e.getX(), e.getY() - mNewEventDragOffset);
         if (selectedTime != null) {
             List<WeekViewEvent> tempEvents = new ArrayList<>(mEvents);
             if (mNewEventRect != null) {
