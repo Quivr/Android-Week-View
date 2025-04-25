@@ -11,6 +11,9 @@ import androidx.annotation.RequiresApi;
 import androidx.core.view.GestureDetectorCompat;
 import androidx.core.view.ViewCompat;
 import androidx.interpolator.view.animation.FastOutLinearInInterpolator;
+
+import android.os.Handler;
+import android.os.Looper;
 import android.text.*;
 import android.text.format.DateFormat;
 import android.text.style.StyleSpan;
@@ -37,6 +40,9 @@ public class WeekView extends View {
 
     private enum NewEventScrollDirection {
         NONE, UP, DOWN
+    }
+    private enum AutoScrollDirection {
+        LEFT, RIGHT
     }
 
     @Deprecated
@@ -94,6 +100,13 @@ public class WeekView extends View {
     private boolean movingNewEvent = false;
     private NewEventScrollDirection mCurrentNewEventScrollDirection = NewEventScrollDirection.NONE;
     private float mNewEventDragOffset = 0;
+    private Handler autoScrollHandler = new Handler(Looper.getMainLooper());
+    private boolean isAutoScrolling = false;
+    private Runnable autoScrollRunnable;
+    private int mAutoScrollInterval = 1200;
+    private int mAutoScrollDuration = 300;
+    private int mAutoScrollLeftThreshold = 150;
+    private int mAutoScrollRightThreshold = 150;
 
     // Attributes and their default values.
     private int mHourHeight = 50;
@@ -299,7 +312,7 @@ public class WeekView extends View {
 
         @Override
         public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-            if (mIsZooming)
+            if (mIsZooming || movingNewEvent)
                 return true;
 
             if ((mCurrentFlingDirection == Direction.LEFT && !mHorizontalFlingEnabled) ||
@@ -2488,8 +2501,6 @@ public class WeekView extends View {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         // TODO: fix single tap up
-        // TODO: fix horizontal auto scroll when dragging
-        // TODO: fix on drag verspringt bij start dragging -> lost op door verticale drag offset variabele toe te voegen
         mScaleDetector.onTouchEvent(event);
         boolean val = mGestureDetector.onTouchEvent(event);
         if (event.getAction() == MotionEvent.ACTION_DOWN && creatingNewEvent && wasOnNewEventRect(event)) {
@@ -2500,7 +2511,11 @@ public class WeekView extends View {
         }
 
         if (event.getAction() == MotionEvent.ACTION_UP && movingNewEvent) {
-            stopScrolling();
+            if (isAutoScrolling) {
+                stopAutoScroll();
+            } else {
+                stopScrolling();
+            }
             movingNewEvent = false;
         }
 
@@ -2511,20 +2526,28 @@ public class WeekView extends View {
             float pixelsFromZero = event.getY() - mHeaderHeight
                     - mHeaderRowPadding * 2 - mTimeTextHeight / 2 - mHeaderMarginBottom;
             if (pixelsFromZero < mHourHeight) {
-                if (mCurrentNewEventScrollDirection == NewEventScrollDirection.NONE) {
+                if (mCurrentNewEventScrollDirection == NewEventScrollDirection.NONE && !isAutoScrolling) {
                     mCurrentNewEventScrollDirection = NewEventScrollDirection.UP;
                     int distance = (int) getYMaxLimit() - (int) mCurrentOrigin.y;
                     mScroller.startScroll((int) mCurrentOrigin.x, (int) mCurrentOrigin.y, 0,distance, Math.abs(distance / mHourHeight * mNewEventVerticalScrollDuration));
+                    ViewCompat.postInvalidateOnAnimation(WeekView.this);
                 }
             } else if (event.getY() > getHeight() - mHourHeight) {
-                if (mCurrentNewEventScrollDirection == NewEventScrollDirection.NONE) {
+                if (mCurrentNewEventScrollDirection == NewEventScrollDirection.NONE && !isAutoScrolling) {
                     mCurrentNewEventScrollDirection = NewEventScrollDirection.DOWN;
                     int distance = (int) getYMinLimit() - (int) mCurrentOrigin.y;
                     mScroller.startScroll((int) mCurrentOrigin.x, (int) mCurrentOrigin.y, 0, distance, Math.abs(distance / mHourHeight * mNewEventVerticalScrollDuration));
+                    ViewCompat.postInvalidateOnAnimation(WeekView.this);
                 }
+            } else if (event.getX() < mAutoScrollLeftThreshold) {
+                if (!isAutoScrolling) startAutoScroll(AutoScrollDirection.LEFT);
+            } else if (getWidth() - event.getX() < mAutoScrollRightThreshold) {
+                if (!isAutoScrolling) startAutoScroll(AutoScrollDirection.RIGHT);
             } else if (mCurrentNewEventScrollDirection == NewEventScrollDirection.UP || mCurrentNewEventScrollDirection == NewEventScrollDirection.DOWN) {
                 mCurrentNewEventScrollDirection = NewEventScrollDirection.NONE;
                 mScroller.forceFinished(true);
+            } else if (isAutoScrolling) {
+                stopAutoScroll();
             }
         }
 
@@ -2537,6 +2560,42 @@ public class WeekView extends View {
         }
 
         return val;
+    }
+
+    // Call this when user enters the critical area (left or right edge)
+    private void startAutoScroll(AutoScrollDirection direction) {
+        if (isAutoScrolling || !mScroller.isFinished()) return;
+
+        isAutoScrolling = true;
+        autoScrollRunnable = new Runnable() {
+            @Override
+            public void run() {
+                scrollOneWeek(direction);
+                autoScrollHandler.postDelayed(this, mAutoScrollInterval);
+            }
+        };
+        autoScrollHandler.post(autoScrollRunnable);
+    }
+
+    // Call this when user leaves the critical area
+    private void stopAutoScroll() {
+        isAutoScrolling = false;
+        if (autoScrollRunnable != null) {
+            autoScrollHandler.removeCallbacks(autoScrollRunnable);
+            autoScrollRunnable = null;
+        }
+    }
+
+    // Replace with your actual scroll logic
+    private void scrollOneWeek(AutoScrollDirection direction) {
+        int distance = (int) -(mNumberOfVisibleDays * (mWidthPerDay + mColumnGap));
+        if (direction == AutoScrollDirection.RIGHT) {
+            mScroller.startScroll((int) mCurrentOrigin.x, (int) mCurrentOrigin.y,distance , 0, mAutoScrollDuration);
+            ViewCompat.postInvalidateOnAnimation(WeekView.this);
+        } else if (direction == AutoScrollDirection.LEFT) {
+            mScroller.startScroll((int) mCurrentOrigin.x, (int) mCurrentOrigin.y, -distance, 0, mAutoScrollDuration);
+            ViewCompat.postInvalidateOnAnimation(WeekView.this);
+        }
     }
 
     /**
@@ -2617,12 +2676,7 @@ public class WeekView extends View {
      * @return true if scrolling should be stopped before reaching the end of animation.
      */
     private boolean forceFinishScroll() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
-            // current velocity only available since api 14
-            return mScroller.getCurrVelocity() <= mMinimumFlingVelocity;
-        } else {
-            return false;
-        }
+        return mScroller.getCurrVelocity() <= mMinimumFlingVelocity;
     }
 
 
@@ -2726,9 +2780,15 @@ public class WeekView extends View {
 
     private void updateNewEvent(MotionEvent e) {
         Log.d("QuivrWeekView", String.format("updateNewEvent: %s%n", e.toString()));
-        Log.d("QuivrWeekView", String.format(Float.valueOf(mNewEventDragOffset).toString()));
-        Log.d("QuivrWeekView", String.format(Float.valueOf(e.getY()).toString()));
-        Calendar selectedTime = getTimeFromPoint(e.getX(), e.getY() - mNewEventDragOffset);
+
+        float x = e.getX();
+
+        // Ugly fix for when the user is dragging the event over the small left time column
+        if (x < mHeaderColumnWidth) {
+            x = mHeaderColumnWidth + 1;
+        }
+
+        Calendar selectedTime = getTimeFromPoint(x, e.getY() - mNewEventDragOffset);
         if (selectedTime != null) {
             List<WeekViewEvent> tempEvents = new ArrayList<>(mEvents);
             if (mNewEventRect != null) {
