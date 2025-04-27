@@ -1,0 +1,49 @@
+name: Publish to Maven Central
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 3.0.0)'
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    if: github.event.sender.site_admin == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Prepare root gradle.properties
+        run: |
+          echo "mavenCentralUsername=${{ secrets.MAVEN_CENTRAL_USERNAME }}" >> gradle.properties
+          echo "mavenCentralPassword=${{ secrets.MAVEN_CENTRAL_PASSWORD }}" >> gradle.properties
+          echo "signing.password=${{ secrets.SIGNING_PASSWORD }}" >> gradle.properties
+          echo "signing.keyId=${{ secrets.SIGNING_KEY_ID }}" >> gradle.properties
+          echo "signing.secretKeyRingFile=secring.gpg" >> gradle.properties
+          
+          # Write secret keyring file
+          echo "${{ secrets.SIGNING_SECRET_KEY_RING_FILE }}" | base64 -d > secring.gpg
+
+      - name: Set VERSION_NAME in library/gradle.properties
+        run: |
+          if grep -q "^VERSION_NAME=" library/gradle.properties; then
+            sed -i "s/^VERSION_NAME=.*/VERSION_NAME=${{ github.event.inputs.version }}/" library/gradle.properties
+          else
+            echo "VERSION_NAME=${{ github.event.inputs.version }}" >> library/gradle.properties
+          fi      
+      - name: Run publish and release
+        run: ./gradlew :library:publishAndReleaseToMavenCentral --no-configuration-cache
