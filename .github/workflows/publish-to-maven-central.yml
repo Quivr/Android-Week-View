@@ -15,7 +15,6 @@ permissions:
 
 jobs:
   publish:
-    if: github.event.sender.site_admin == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
