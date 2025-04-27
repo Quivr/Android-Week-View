@@ -1,14 +1,14 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 25
+    compileSdkVersion 35
     buildToolsVersion '25.0.2'
     namespace "com.alamkanak.sample"
 
     defaultConfig {
         applicationId "com.alamkanak.weekview"
         minSdkVersion 14
-        targetSdkVersion 25
+        targetSdkVersion 35
         versionCode 1
         versionName "1.0"
     }
