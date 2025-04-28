@@ -213,6 +213,7 @@ public class WeekView extends View {
                     if (eventRect.rectF != null && eventRect.rectF.contains(e.getX(), e.getY())) {
                         if (mNewEventIdentifier.equals(eventRect.event.getIdentifier())) {
                             mAddEventClickListener.onAddEventClicked(mNewEventRect.event.getStartTime(), mNewEventRect.event.getEndTime());
+                            playSoundEffect(SoundEffectConstants.CLICK);
                             // Do this later, as we are iterating over this list currently
                             doRemoveNewEvent = true;
                             creatingNewEvent = false;
@@ -231,6 +232,7 @@ public class WeekView extends View {
             // If the tap was on an empty space, then trigger the callback.
             if (wasEmptyClick && (mEmptyViewClickListener != null || mAddEventClickListener != null) && e.getX() > mHeaderColumnWidth && e.getY() > (mHeaderHeight + mHeaderRowPadding * 2 + mHeaderMarginBottom)) {
                 mNewEventDragOffset = 0;
+                playSoundEffect(SoundEffectConstants.CLICK);
                 startNewEventAdding(e);
             }
 
@@ -2864,8 +2866,6 @@ public class WeekView extends View {
     }
 
     private void startNewEventAdding(MotionEvent e) {
-        playSoundEffect(SoundEffectConstants.CLICK);
-
         Calendar selectedTime = getTimeFromPoint(e.getX(), e.getY());
         if (mEmptyViewClickListener != null && selectedTime != null)
             mEmptyViewClickListener.onEmptyViewClicked((Calendar) selectedTime.clone());
