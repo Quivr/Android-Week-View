@@ -107,10 +107,10 @@ public class WeekView extends View {
     private boolean isAutoScrolling = false;
     private Runnable autoScrollRunnable;
     private final int mNewEventVerticalScrollDuration = 100;
-    private final int mAutoScrollInterval = 1200;
+    private final int mAutoScrollInterval = 900;
     private final int mAutoScrollDuration = 300;
-    private final int mAutoScrollLeftThreshold = 150;
-    private final int mAutoScrollRightThreshold = 150;
+    private final int mAutoScrollLeftThreshold = 100;
+    private final int mAutoScrollRightThreshold = 100;
 
     // Attributes and their default values.
     private int mHourHeight = 50;
@@ -1063,7 +1063,7 @@ public class WeekView extends View {
                         mEventRects.get(i).rectF = new RectF(left, top, right, bottom);
                         mEventBackgroundPaint.setColor(mEventRects.get(i).event.getColor() == 0 ? mDefaultEventColor : mEventRects.get(i).event.getColor());
                         mEventBackgroundPaint.setShader(mEventRects.get(i).event.getShader());
-                        canvas.drawRoundRect(mEventRects.get(i).rectF, 30, 30, mEventBackgroundPaint);
+                        canvas.drawRoundRect(mEventRects.get(i).rectF, mEventCornerRadius, mEventCornerRadius, mEventBackgroundPaint);
                         float topToUse = top;
                         if (mEventRects.get(i).event.getStartTime().get(Calendar.HOUR_OF_DAY) < mMinTime)
                             topToUse = mHourHeight * (getPassedMinutesInDay(mMinTime, 0) / 60) + getEventsTop();
@@ -2572,7 +2572,7 @@ public class WeekView extends View {
                 autoScrollHandler.postDelayed(this, mAutoScrollInterval);
             }
         };
-        autoScrollHandler.post(autoScrollRunnable);
+        autoScrollHandler.postDelayed(autoScrollRunnable, mAutoScrollInterval);
     }
 
     // Call this when user leaves the critical area
