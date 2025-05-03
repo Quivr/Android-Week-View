@@ -5,6 +5,7 @@ import android.graphics.Typeface;
 import android.os.Bundle;
 
 import com.alamkanak.weekview.TextColorPicker;
+import com.alamkanak.weekview.WeekView;
 import com.alamkanak.weekview.WeekViewEvent;
 
 import java.util.ArrayList;
@@ -32,6 +33,7 @@ public class BasicActivity extends BaseActivity {
                 return a < 0.2 ? Color.BLACK : Color.WHITE;
             }
         });
+        mWeekView.setAdditionalTimeInfo(WeekView.ADDITIONAL_INFO_MONTH);
     }
 
     @Override

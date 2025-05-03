@@ -2,7 +2,14 @@ package com.alamkanak.weekview;
 
 import android.content.Context;
 import android.content.res.TypedArray;
-import android.graphics.*;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.PointF;
+import android.graphics.Rect;
+import android.graphics.RectF;
+import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -11,18 +18,37 @@ import android.support.annotation.RequiresApi;
 import android.support.v4.view.GestureDetectorCompat;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.view.animation.FastOutLinearInInterpolator;
-import android.text.*;
+import android.text.Layout;
+import android.text.SpannableStringBuilder;
+import android.text.StaticLayout;
+import android.text.TextPaint;
+import android.text.TextUtils;
 import android.text.format.DateFormat;
 import android.text.style.StyleSpan;
 import android.util.AttributeSet;
 import android.util.TypedValue;
-import android.view.*;
+import android.view.DragEvent;
+import android.view.GestureDetector;
+import android.view.HapticFeedbackConstants;
+import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
+import android.view.SoundEffectConstants;
+import android.view.View;
+import android.view.ViewConfiguration;
 import android.widget.OverScroller;
 
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
 
-import static com.alamkanak.weekview.WeekViewUtil.*;
+import static com.alamkanak.weekview.WeekViewUtil.daysBetween;
+import static com.alamkanak.weekview.WeekViewUtil.getPassedMinutesInDay;
+import static com.alamkanak.weekview.WeekViewUtil.isSameDay;
+import static com.alamkanak.weekview.WeekViewUtil.today;
 
 /**
  * Created by Raquib-ul-Alam Kanak on 7/21/2014.
@@ -38,6 +64,12 @@ public class WeekView extends View {
     public static final int LENGTH_SHORT = 1;
     @Deprecated
     public static final int LENGTH_LONG = 2;
+
+    public static final int ADDITIONAL_INFO_NONE = 0;
+    public static final int ADDITIONAL_INFO_YEAR = 1;
+    public static final int ADDITIONAL_INFO_MONTH = 2;
+    public static final int ADDITIONAL_INFO_WEEK = 3;
+
     private final Context mContext;
     private Calendar mHomeDate;
     private Calendar mMinDate;
@@ -147,6 +179,7 @@ public class WeekView extends View {
     private boolean mAutoLimitTime = false;
     private boolean mEnableDropListener = false;
     private int mMinOverlappingMinutes = 0;
+    private int mAdditionalTimeInfo = ADDITIONAL_INFO_NONE;
 
     // Listeners.
     private EventClickListener mEventClickListener;
@@ -357,7 +390,7 @@ public class WeekView extends View {
                                 top < getHeight() &&
                                 right > mHeaderColumnWidth &&
                                 bottom > 0
-                                ) {
+                        ) {
                             RectF dayRectF = new RectF(left, top, right, bottom - mCurrentOrigin.y);
                             newEvent.setColor(mNewEventColor);
                             mNewEventRect = new EventRect(newEvent, newEvent, dayRectF);
@@ -717,7 +750,7 @@ public class WeekView extends View {
         canvas.save();
         canvas.clipRect(0, mHeaderHeight + mHeaderRowPadding * 2, mHeaderColumnWidth, getHeight());
         canvas.restore();
-        
+
         for (int i = 0; i < getNumberOfPeriods(); i++) {
             // If we are showing half hours (eg. 5:30am), space the times out by half the hour height
             // and need to provide 30 minutes on each odd period, otherwise, minutes is always 0.
@@ -937,7 +970,7 @@ public class WeekView extends View {
         canvas.clipRect(0, 0, mTimeTextWidth + mHeaderColumnPadding * 2, mHeaderHeight + mHeaderRowPadding * 2);
         canvas.drawRect(0, 0, mTimeTextWidth + mHeaderColumnPadding * 2, mHeaderHeight + mHeaderRowPadding * 2, mHeaderBackgroundPaint);
         canvas.restore();
-        
+
         // Clip to paint header row only.
         canvas.save();
         canvas.clipRect(mHeaderColumnWidth, 0, getWidth(), mHeaderHeight + mHeaderRowPadding * 2);
@@ -948,6 +981,7 @@ public class WeekView extends View {
 
         // Draw the header row texts.
         startPixel = startFromPixel;
+        drawAdditionalInfo(canvas, leftDaysWithGaps, startPixel);
         for (int dayNumber = leftDaysWithGaps + 1; dayNumber <= leftDaysWithGaps + getRealNumberOfVisibleDays() + 1; dayNumber++) {
             // Check if the day is today.
             day = (Calendar) mHomeDate.clone();
@@ -967,6 +1001,27 @@ public class WeekView extends View {
             startPixel += mWidthPerDay + mColumnGap;
         }
 
+    }
+
+    private void drawAdditionalInfo(Canvas canvas, int leftDaysWithGaps, float startPixel) {
+        if (mAdditionalTimeInfo != ADDITIONAL_INFO_NONE) {
+            String pattern;
+            switch (mAdditionalTimeInfo) {
+                case ADDITIONAL_INFO_MONTH:
+                    pattern = "MMM";
+                    break;
+                case ADDITIONAL_INFO_WEEK:
+                    pattern = "ww";
+                    break;
+                default:
+                    pattern = "yyyy";
+                    break;
+            }
+            Calendar firstVisibleDay = (Calendar) mHomeDate.clone();
+            firstVisibleDay.add(Calendar.DATE, leftDaysWithGaps);
+            canvas.drawText(new SimpleDateFormat(pattern, Locale.getDefault()).format(firstVisibleDay.getTime()),
+                    startPixel - mHeaderColumnWidth / 2, mHeaderTextHeight + mHeaderRowPadding, mHeaderTextPaint);
+        }
     }
 
     /**
@@ -1078,7 +1133,7 @@ public class WeekView extends View {
                             top < getHeight() &&
                             right > mHeaderColumnWidth &&
                             bottom > mHeaderHeight + mHeaderRowPadding * 2 + mTimeTextHeight / 2 + mHeaderMarginBottom
-                            ) {
+                    ) {
                         mEventRects.get(i).rectF = new RectF(left, top, right, bottom);
                         mEventBackgroundPaint.setColor(mEventRects.get(i).event.getColor() == 0 ? mDefaultEventColor : mEventRects.get(i).event.getColor());
                         mEventBackgroundPaint.setShader(mEventRects.get(i).event.getShader());
@@ -1131,7 +1186,7 @@ public class WeekView extends View {
                             top < getHeight() &&
                             right > mHeaderColumnWidth &&
                             bottom > 0
-                            ) {
+                    ) {
                         mEventRects.get(i).rectF = new RectF(left, top, right, bottom);
                         mEventBackgroundPaint.setColor(mEventRects.get(i).event.getColor() == 0 ? mDefaultEventColor : mEventRects.get(i).event.getColor());
                         mEventBackgroundPaint.setShader(mEventRects.get(i).event.getShader());
@@ -1157,11 +1212,13 @@ public class WeekView extends View {
         if (rect.right - rect.left - mEventPadding * 2 < 0) return;
         if (rect.bottom - rect.top - mEventPadding * 2 < 0) return;
 
+
+        if (mNewEventIdentifier.equals(event.getIdentifier())) return;
+
         // Prepare the name of the event.
-        SpannableStringBuilder bob = new SpannableStringBuilder();
+        StringBuilder bob = new StringBuilder();
         if (!TextUtils.isEmpty(event.getName())) {
             bob.append(event.getName());
-            bob.setSpan(new StyleSpan(android.graphics.Typeface.BOLD), 0, bob.length(), 0);
         }
         // Prepare the location of the event.
         if (!TextUtils.isEmpty(event.getLocation())) {
@@ -1182,27 +1239,56 @@ public class WeekView extends View {
         if (textLayout.getLineCount() > 0) {
             int lineHeight = textLayout.getHeight() / textLayout.getLineCount();
 
-            if (availableHeight >= lineHeight) {
-                // Calculate available number of line counts.
-                int availableLineCount = availableHeight / lineHeight;
-                do {
-                    // Ellipsize text to fit into event rect.
-                    if (!mNewEventIdentifier.equals(event.getIdentifier()))
-                        textLayout = new StaticLayout(TextUtils.ellipsize(bob, mEventTextPaint, availableLineCount * availableWidth, TextUtils.TruncateAt.END), mEventTextPaint, (int) (rect.right - originalLeft - mEventPadding * 2), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-
-                    // Reduce line count.
-                    availableLineCount--;
-
-                    // Repeat until text is short enough.
-                } while (textLayout.getHeight() > availableHeight);
-
-                // Draw text.
-                canvas.save();
-                canvas.translate(originalLeft + mEventPadding, originalTop + mEventPadding);
-                textLayout.draw(canvas);
-                canvas.restore();
+            if (availableHeight < lineHeight) {
+                return;
             }
+            String text = textLayout.getText().toString();
+            SpannableStringBuilder correctedText = getEllipsizedText(text, rect, originalLeft, availableHeight, availableWidth, lineHeight);
+
+            boolean wholeNameIsShown = correctedText.toString().startsWith(event.getName());
+            // make event name bold
+            if (wholeNameIsShown) {
+                correctedText.setSpan(new StyleSpan(android.graphics.Typeface.BOLD), 0, event.getName().length(), 0);
+            } else { // text must be ellipsized and the location (if any) is totally cut of
+                correctedText.setSpan(new StyleSpan(android.graphics.Typeface.BOLD), 0, correctedText.length(), 0);
+            }
+
+            textLayout = new StaticLayout(correctedText, mEventTextPaint, (int) (rect.right - originalLeft - mEventPadding * 2),
+                    Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+
+            // Draw text.
+            canvas.save();
+            canvas.translate(originalLeft + mEventPadding, originalTop + mEventPadding);
+            textLayout.draw(canvas);
+            canvas.restore();
         }
+    }
+
+    private SpannableStringBuilder getEllipsizedText(String text, RectF rect, float originalLeft, int availableHeight, int availableWidth, int lineHeight) {
+        // Calculate available number of line counts.
+        @SuppressWarnings("UnnecessaryLocalVariable")
+        int availableLineCount = availableHeight / lineHeight;
+        int availableLinesLeft = availableLineCount;
+        String[] lines = text.split("\n");
+        List<String> newLines = new ArrayList<>();
+        for (String s : lines) {
+            if (availableLinesLeft < 1) {
+                break;
+            }
+            CharSequence ellipsizedLine = TextUtils.ellipsize(
+                    s,
+                    mEventTextPaint, availableWidth * availableLinesLeft, TextUtils.TruncateAt.END);
+            newLines.add((String) ellipsizedLine);
+            StaticLayout textLayout = new StaticLayout(ellipsizedLine, mEventTextPaint, (int) (rect.right - originalLeft - mEventPadding * 2),
+                    Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            availableLinesLeft -= textLayout.getLineCount();
+        }
+        SpannableStringBuilder correctedText = new SpannableStringBuilder();
+        for (String line : newLines) {
+            correctedText.append(line);
+            correctedText.append("\n");
+        }
+        return correctedText;
     }
 
     /**
@@ -2511,6 +2597,20 @@ public class WeekView extends View {
         return this.mMinOverlappingMinutes;
     }
 
+    /**
+     * Sets which information should be displayed in addition in the header next to the week day names
+     *
+     * @param additionalTimeInfo the info which should be displayed, one of {@literal ADDITIONAL_INFO_NONE},
+     * {@literal ADDITIONAL_INFO_YEAR}, {@literal ADDITIONAL_INFO_MONTH}, {@literal ADDITIONAL_INFO_WEEK}
+     */
+    public void setAdditionalTimeInfo(int additionalTimeInfo) {
+        this.mAdditionalTimeInfo = additionalTimeInfo;
+    }
+
+    public int getAdditionalTimeInfo() {
+        return this.mAdditionalTimeInfo;
+    }
+
     /////////////////////////////////////////////////////////////////
     //
     //      Functions related to scrolling.
@@ -2794,6 +2894,7 @@ public class WeekView extends View {
     public interface ZoomEndListener {
         /**
          * Triggered when the user finishes a zoom action.
+         *
          * @param hourHeight The final height of hours when the user finishes zoom.
          */
         void onZoomEnd(int hourHeight);
