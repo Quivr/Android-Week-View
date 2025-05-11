@@ -1,3 +1,9 @@
+plugins {
+    id 'signing'
+    id "com.vanniktech.maven.publish" version "0.31.0"
+}
+
+import com.vanniktech.maven.publish.SonatypeHost
 apply plugin: 'com.android.library'
 
 repositories {
@@ -5,12 +11,12 @@ repositories {
 }
 
 android {
-    compileSdkVersion 25
-    buildToolsVersion '25.0.2'
+    namespace "com.alamkanak.weekview"
+    compileSdkVersion 34
 
     defaultConfig {
-        minSdkVersion 9
-        targetSdkVersion 25
+        minSdkVersion 24
+        targetSdkVersion 34
     }
 }
 
@@ -18,8 +24,39 @@ configurations {
     javadocDeps
 }
 dependencies {
-    compile 'com.android.support:appcompat-v7:25.1.0'
-    javadocDeps 'com.android.support:appcompat-v7:25.1.0'
+    implementation 'androidx.appcompat:appcompat:1.4.2'
 }
 
-apply from: 'gradle-mvn-push.gradle'
+mavenPublishing {
+    coordinates(GROUP, 'android-week-view', VERSION_NAME)
+
+
+    signAllPublications()
+    pom {
+        name = POM_NAME
+        description = POM_DESCRIPTION
+        url = POM_URL
+
+        licenses {
+            license {
+                name = POM_LICENCE_NAME
+                url = POM_LICENCE_URL
+                distribution = POM_LICENCE_DIST
+            }
+        }
+
+        developers {
+            developer {
+                id = POM_DEVELOPER_ID
+                name = POM_DEVELOPER_NAME
+            }
+        }
+
+        scm {
+            url = POM_SCM_URL
+            connection = POM_SCM_CONNECTION
+            developerConnection = POM_SCM_DEV_CONNECTION
+        }
+    }
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+}

@@ -15,7 +15,6 @@ permissions:
 
 jobs:
   publish:
-    if: github.event.sender.site_admin == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -36,7 +35,7 @@ jobs:
           echo "signing.secretKeyRingFile=secring.gpg" >> gradle.properties
           
           # Write secret keyring file
-          echo "${{ secrets.SIGNING_SECRET_KEY_RING_FILE }}" | base64 -d > secring.gpg
+          echo "${{ secrets.SIGNING_SECRET_KEY_RING_FILE }}" | base64 -d > library/secring.gpg
 
       - name: Set VERSION_NAME in library/gradle.properties
         run: |
