@@ -25,7 +25,6 @@ configurations {
 }
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.4.2'
-    // javadocDeps 'com.android.support:appcompat-v7:25.1.0'
 }
 
 mavenPublishing {
