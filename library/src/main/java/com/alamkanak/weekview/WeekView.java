@@ -1275,47 +1275,66 @@ public class WeekView extends View {
                 icon.draw(canvas);
                 startX += mTagIconSize + mTagIconSpacing;
             } else if (!TextUtils.isEmpty(tag)) {
-                mTagTextPaint.setXfermode(mXfermode);
-                // If no icon is found, draw the tag text with a background instead.
+                // Check if the string is only emojis
+                boolean isOnlyEmoji = tag.matches("^[\\p{IsEmoji_Presentation}\\p{IsEmoji_Modifier_Base}\\p{IsEmoji_Component}\\u200d\\uFE0F]+$") && !tag.matches(".*\\d.*");
 
-                // 1. Define padding for the tag background
-                float tagPadding = mEventPadding / 2; // Use a small padding
-
-                // 2. Measure the text
+                // Measure the text
                 float textWidth = mTagTextPaint.measureText(tag);
-                float textHeight = mTagTextPaint.descent() - mTagTextPaint.ascent();
+                float tagPadding = mEventPadding / 2;
 
-                // 3. Define the background bounds
-                float backgroundHeight = mTagIconSize; // Match the icon height
-                float backgroundWidth = textWidth + tagPadding * 2;
-                RectF backgroundRect = new RectF(startX, bottomY, startX + backgroundWidth, bottomY + backgroundHeight);
+                if (isOnlyEmoji) {
+                    // --- EMOJI ONLY PATH ---
+                    // Just draw the emoji in its original colors, no background
+                    mTagTextPaint.setXfermode(null); // Ensure no Xfermode is active
 
-                int saveCount = canvas.saveLayer(backgroundRect, null);
+                    StaticLayout textLayout = StaticLayout.Builder.obtain(tag, 0, tag.length(), mTagTextPaint, (int) Math.ceil(textWidth))
+                    .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                    .setIncludePad(false)
+                    .build();
 
-                mTagBackgroundPaint.setColor(Color.parseColor(color));
-                // 2. Draw the solid background
-                canvas.drawRoundRect(backgroundRect, mTagCornerRadius, mTagCornerRadius, mTagBackgroundPaint);
+                    canvas.save();
+                    // Align emoji vertically with where the icon/background would be
+                    float textY = bottomY + (mTagIconSize - textLayout.getHeight()) / 2;
+                    canvas.translate(startX, textY);
+                    textLayout.draw(canvas);
+                    canvas.restore();
 
-                // 3. Set the Xfermode to DST_OUT (This "punches out" the destination)
-                mTagTextPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
+                    startX += textWidth + mTagIconSpacing;
 
-                // 4. Draw the text
-                StaticLayout textLayout = StaticLayout.Builder.obtain(tag, 0, tag.length(), mTagTextPaint, (int) Math.ceil(textWidth))
-                .setAlignment(Layout.Alignment.ALIGN_NORMAL)
-                .setIncludePad(false)
-                .build();
+                } else {
+                    // --- STANDARD TEXT PATH (PUNCH-OUT EFFECT) ---
+                    float backgroundHeight = mTagIconSize;
+                    float backgroundWidth = textWidth + tagPadding * 2;
+                    RectF backgroundRect = new RectF(startX, bottomY, startX + backgroundWidth, bottomY + backgroundHeight);
 
-                canvas.save();
-                float textY = backgroundRect.top + (backgroundHeight - textLayout.getHeight()) / 2;
-                float textX = backgroundRect.left + tagPadding;
-                canvas.translate(textX, textY);
-                textLayout.draw(canvas);
-                canvas.restore();
+                    // Save layer for Xfermode composition
+                    int saveCount = canvas.saveLayer(backgroundRect, null);
 
-                // 5. Clear Xfermode and Restore the layer (composites the result back)
-                mTagTextPaint.setXfermode(null);
-                canvas.restoreToCount(saveCount);
-                startX += backgroundWidth + mTagIconSpacing;
+                    // 1. Draw the solid background
+                    mTagBackgroundPaint.setColor(Color.parseColor(color));
+                    canvas.drawRoundRect(backgroundRect, mTagCornerRadius, mTagCornerRadius, mTagBackgroundPaint);
+
+                    // 2. Set Xfermode to DST_OUT to punch out the text
+                    mTagTextPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
+
+                    StaticLayout textLayout = StaticLayout.Builder.obtain(tag, 0, tag.length(), mTagTextPaint, (int) Math.ceil(textWidth))
+                    .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                    .setIncludePad(false)
+                    .build();
+
+                    canvas.save();
+                    float textY = backgroundRect.top + (backgroundHeight - textLayout.getHeight()) / 2;
+                    float textX = backgroundRect.left + tagPadding;
+                    canvas.translate(textX, textY);
+                    textLayout.draw(canvas);
+                    canvas.restore();
+
+                    // 3. Cleanup
+                    mTagTextPaint.setXfermode(null);
+                    canvas.restoreToCount(saveCount);
+
+                    startX += backgroundWidth + mTagIconSpacing;
+                }
             }
         }
         canvas.restore();
