@@ -5,6 +5,7 @@ import android.content.res.TypedArray;
 import android.graphics.*;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import androidx.core.graphics.drawable.DrawableCompat;
 import android.os.Build;
 
 import androidx.annotation.NonNull;
@@ -79,6 +80,39 @@ public class WeekView extends View {
     private Paint mTodayHeaderTextPaint;
     private Paint mEventBackgroundPaint;
     private Paint mNewEventBackgroundPaint;
+    private TextPaint mTagTextPaint;
+    private Paint mTagBackgroundPaint;
+    private Xfermode mXfermode;
+    private int mTagIconSize = 96;
+    private int mTagIconSpacing = 12;
+    private int mTagCornerRadius = 12;
+
+    private static final Map<String, Integer> TAG_ICON_MAP = new HashMap<String, Integer>() {{
+        put("meeting", R.drawable.tag_meeting);
+        put("birthday", R.drawable.tag_birthday);
+        put("deadline", R.drawable.tag_deadline);
+    }};
+
+    public void setTagIconSize(int sizePx) {
+        mTagIconSize = sizePx;
+    }
+    public void setTagIconSpacing(int spacingPx) {
+        mTagIconSpacing = spacingPx;
+    }
+    public int getTagIconSize() {
+        return mTagIconSize;
+    }
+    public int getTagIconSpacing() {
+        return mTagIconSpacing;
+    }
+    public int getTagCornerRadius() {
+        return mTagCornerRadius;
+    }
+    public void setTagCornerRadius(int tagCornerRadius) {
+        mTagCornerRadius = tagCornerRadius;
+    }
+
+
     private float mHeaderColumnWidth;
     private List<EventRect> mEventRects;
     private List<WeekViewEvent> mEvents;
@@ -560,6 +594,21 @@ public class WeekView extends View {
         mDefaultEventColor = Color.parseColor("#9fc6e7");
         // Set default empty event color.
         mNewEventColor = Color.parseColor("#3c93d9");
+
+        // Initialize paint for tags
+        mTagBackgroundPaint = new Paint();
+        mTagBackgroundPaint.setColor(Color.WHITE);
+        mTagBackgroundPaint.setStyle(Paint.Style.FILL);
+
+        mTagTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        mTagTextPaint.setColor(Color.BLACK); // This color will be used to "punch out" the background
+        mTagTextPaint.setTextSize(mEventTextSize);
+        mTagTextPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        // Copy other relevant properties from mEventTextPaint if needed
+        // mTagTextPaint.setTypeface(mEventTextPaint.getTypeface());
+
+        // This Xfermode will create the "punch-out" effect
+        mXfermode = new PorterDuffXfermode(PorterDuff.Mode.DST_OUT);
 
         mScaleDetector = new ScaleGestureDetector(mContext, new WeekViewGestureListener());
     }
@@ -1153,7 +1202,14 @@ public class WeekView extends View {
             bob.append(event.getLocation());
         }
 
-        int availableHeight = (int) (rect.bottom - originalTop - mEventPadding * 2);
+        // Reserve space for tag icons
+        int iconRowHeight = 0;
+        List<String> tags = event.getTags();
+        if (tags != null && !tags.isEmpty()) {
+            iconRowHeight = mTagIconSize + mTagIconSpacing;
+        }
+
+        int availableHeight = (int) (rect.bottom - originalTop - mEventPadding * 2 - iconRowHeight);
         int availableWidth = (int) (rect.right - originalLeft - mEventPadding * 2);
 
         // Get text color if necessary
@@ -1186,6 +1242,83 @@ public class WeekView extends View {
                 canvas.restore();
             }
         }
+
+        // Draw tag icons row
+        if (tags != null && !tags.isEmpty()) {
+            drawTags(tags, rect, canvas, originalLeft, rect.bottom - mTagIconSize - mTagIconSpacing);
+        }
+    }
+
+    // Helper to get drawable for a tag
+    private Drawable getTagIconDrawable(String tag) {
+        Integer resId = TAG_ICON_MAP.get(tag);
+        if (resId == null) return null;
+        try {
+            return getResources().getDrawable(resId);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    // Draw tags
+    private void drawTags(List<String> tags, RectF rect, Canvas canvas, float left, float bottomY) {
+        canvas.save();
+        canvas.clipRect(rect);
+        float startX = left + mTagIconSpacing;
+        for (int i = 0; i < tags.size() - 1; i = i + 2) {
+            String tag = tags.get(i);
+            String color = tags.get(i + 1);
+            Drawable icon = getTagIconDrawable(tag);
+            if (icon != null) {
+                DrawableCompat.setTint(icon, Color.parseColor(color));
+                icon.setBounds((int) (startX), (int) bottomY, (int) (startX + mTagIconSize), (int) (bottomY + mTagIconSize));
+                icon.draw(canvas);
+                startX += mTagIconSize + mTagIconSpacing;
+            } else if (!TextUtils.isEmpty(tag)) {
+                mTagTextPaint.setXfermode(mXfermode);
+                // If no icon is found, draw the tag text with a background instead.
+
+                // 1. Define padding for the tag background
+                float tagPadding = mEventPadding / 2; // Use a small padding
+
+                // 2. Measure the text
+                float textWidth = mTagTextPaint.measureText(tag);
+                float textHeight = mTagTextPaint.descent() - mTagTextPaint.ascent();
+
+                // 3. Define the background bounds
+                float backgroundHeight = mTagIconSize; // Match the icon height
+                float backgroundWidth = textWidth + tagPadding * 2;
+                RectF backgroundRect = new RectF(startX, bottomY, startX + backgroundWidth, bottomY + backgroundHeight);
+
+                int saveCount = canvas.saveLayer(backgroundRect, null);
+
+                mTagBackgroundPaint.setColor(Color.parseColor(color));
+                // 2. Draw the solid background
+                canvas.drawRoundRect(backgroundRect, mTagCornerRadius, mTagCornerRadius, mTagBackgroundPaint);
+
+                // 3. Set the Xfermode to DST_OUT (This "punches out" the destination)
+                mTagTextPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
+
+                // 4. Draw the text
+                StaticLayout textLayout = StaticLayout.Builder.obtain(tag, 0, tag.length(), mTagTextPaint, (int) Math.ceil(textWidth))
+                .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                .setIncludePad(false)
+                .build();
+
+                canvas.save();
+                float textY = backgroundRect.top + (backgroundHeight - textLayout.getHeight()) / 2;
+                float textX = backgroundRect.left + tagPadding;
+                canvas.translate(textX, textY);
+                textLayout.draw(canvas);
+                canvas.restore();
+
+                // 5. Clear Xfermode and Restore the layer (composites the result back)
+                mTagTextPaint.setXfermode(null);
+                canvas.restoreToCount(saveCount);
+                startX += backgroundWidth + mTagIconSpacing;
+            }
+        }
+        canvas.restore();
     }
 
     /**
