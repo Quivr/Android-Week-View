@@ -83,9 +83,10 @@ public class WeekView extends View {
     private TextPaint mTagTextPaint;
     private Paint mTagBackgroundPaint;
     private Xfermode mXfermode;
-    private int mTagIconSize = 96;
-    private int mTagIconSpacing = 12;
+    private int mTagSize = 96;
+    private int mTagSpacing = 12;
     private int mTagCornerRadius = 12;
+    private int mTagTextSize = 12;
 
     private static final Map<String, Integer> TAG_ICON_MAP = new HashMap<String, Integer>() {{
         put("meeting", R.drawable.tag_meeting);
@@ -93,25 +94,35 @@ public class WeekView extends View {
         put("deadline", R.drawable.tag_deadline);
     }};
 
-    public void setTagIconSize(int sizePx) {
-        mTagIconSize = sizePx;
+    public void setTagSize(int sizePx) {
+        mTagSize = sizePx;
+        invalidate();
     }
-    public void setTagIconSpacing(int spacingPx) {
-        mTagIconSpacing = spacingPx;
+    public void setTagSpacing(int spacingPx) {
+        mTagSpacing = spacingPx;
+        invalidate();
     }
-    public int getTagIconSize() {
-        return mTagIconSize;
+    public int getTagSize() {
+        return mTagSize;
     }
-    public int getTagIconSpacing() {
-        return mTagIconSpacing;
+    public int getTagpacing() {
+        return mTagSpacing;
     }
     public int getTagCornerRadius() {
         return mTagCornerRadius;
     }
+    public int getTagTextSize() {
+        return mTagTextSize;
+    }
+    public void setTagTextSize(int tagTextSize) {
+        mTagTextSize = tagTextSize;
+        mTagTextPaint.setTextSize(mTagTextSize);
+        invalidate();
+    }
     public void setTagCornerRadius(int tagCornerRadius) {
         mTagCornerRadius = tagCornerRadius;
+        invalidate();
     }
-
 
     private float mHeaderColumnWidth;
     private List<EventRect> mEventRects;
@@ -602,7 +613,7 @@ public class WeekView extends View {
 
         mTagTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         mTagTextPaint.setColor(Color.BLACK); // This color will be used to "punch out" the background
-        mTagTextPaint.setTextSize(mEventTextSize);
+        mTagTextPaint.setTextSize(mTagTextSize);
         mTagTextPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
         // Copy other relevant properties from mEventTextPaint if needed
         // mTagTextPaint.setTypeface(mEventTextPaint.getTypeface());
@@ -1206,7 +1217,7 @@ public class WeekView extends View {
         int iconRowHeight = 0;
         List<String> tags = event.getTags();
         if (tags != null && !tags.isEmpty()) {
-            iconRowHeight = mTagIconSize + mTagIconSpacing;
+            iconRowHeight = mTagSize + mTagSpacing;
         }
 
         int availableHeight = (int) (rect.bottom - originalTop - mEventPadding * 2 - iconRowHeight);
@@ -1245,7 +1256,7 @@ public class WeekView extends View {
 
         // Draw tag icons row
         if (tags != null && !tags.isEmpty()) {
-            drawTags(tags, rect, canvas, originalLeft, rect.bottom - mTagIconSize - mTagIconSpacing);
+            drawTags(tags, rect, canvas, originalLeft, rect.bottom - mTagSize - mTagSpacing);
         }
     }
 
@@ -1264,16 +1275,16 @@ public class WeekView extends View {
     private void drawTags(List<String> tags, RectF rect, Canvas canvas, float left, float bottomY) {
         canvas.save();
         canvas.clipRect(rect);
-        float startX = left + mTagIconSpacing;
+        float startX = left + mTagSpacing;
         for (int i = 0; i < tags.size() - 1; i = i + 2) {
             String tag = tags.get(i);
             String color = tags.get(i + 1);
             Drawable icon = getTagIconDrawable(tag);
             if (icon != null) {
                 DrawableCompat.setTint(icon, Color.parseColor(color));
-                icon.setBounds((int) (startX), (int) bottomY, (int) (startX + mTagIconSize), (int) (bottomY + mTagIconSize));
+                icon.setBounds((int) (startX), (int) bottomY, (int) (startX + mTagSize), (int) (bottomY + mTagSize));
                 icon.draw(canvas);
-                startX += mTagIconSize + mTagIconSpacing;
+                startX += mTagSize + mTagSpacing;
             } else if (!TextUtils.isEmpty(tag)) {
                 // Check if the string is only emojis
                 boolean isOnlyEmoji = tag.matches("^[\\p{IsEmoji_Presentation}\\p{IsEmoji_Modifier_Base}\\p{IsEmoji_Component}\\u200d\\uFE0F]+$") && !tag.matches(".*\\d.*");
@@ -1294,16 +1305,16 @@ public class WeekView extends View {
 
                     canvas.save();
                     // Align emoji vertically with where the icon/background would be
-                    float textY = bottomY + (mTagIconSize - textLayout.getHeight()) / 2;
+                    float textY = bottomY + (mTagSize - textLayout.getHeight()) / 2;
                     canvas.translate(startX, textY);
                     textLayout.draw(canvas);
                     canvas.restore();
 
-                    startX += textWidth + mTagIconSpacing;
+                    startX += textWidth + mTagSpacing;
 
                 } else {
                     // --- STANDARD TEXT PATH (PUNCH-OUT EFFECT) ---
-                    float backgroundHeight = mTagIconSize;
+                    float backgroundHeight = mTagSize;
                     float backgroundWidth = textWidth + tagPadding * 2;
                     RectF backgroundRect = new RectF(startX, bottomY, startX + backgroundWidth, bottomY + backgroundHeight);
 
@@ -1333,7 +1344,7 @@ public class WeekView extends View {
                     mTagTextPaint.setXfermode(null);
                     canvas.restoreToCount(saveCount);
 
-                    startX += backgroundWidth + mTagIconSpacing;
+                    startX += backgroundWidth + mTagSpacing;
                 }
             }
         }
