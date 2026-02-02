@@ -89,9 +89,11 @@ public class WeekView extends View {
     private int mTagTextSize = 12;
 
     private static final Map<String, Integer> TAG_ICON_MAP = new HashMap<String, Integer>() {{
-        put("meeting", R.drawable.tag_meeting);
-        put("birthday", R.drawable.tag_birthday);
-        put("deadline", R.drawable.tag_deadline);
+        put("EXCLAMATION", R.drawable.tag_exclamation);
+        put("BEER", R.drawable.tag_beer);
+        put("X", R.drawable.tag_x);
+        put("BED", R.drawable.tag_bed);
+        put("CHECK", R.drawable.tag_check);
     }};
 
     public void setTagSize(int sizePx) {
