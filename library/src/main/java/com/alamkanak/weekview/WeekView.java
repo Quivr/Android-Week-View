@@ -5,6 +5,7 @@ import android.content.res.TypedArray;
 import android.graphics.*;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
 import android.os.Build;
 
@@ -88,13 +89,8 @@ public class WeekView extends View {
     private int mTagCornerRadius = 12;
     private int mTagTextSize = 12;
 
-    private static final Map<String, Integer> TAG_ICON_MAP = new HashMap<String, Integer>() {{
-        put("EXCLAMATION", R.drawable.tag_exclamation);
-        put("BEER", R.drawable.tag_beer);
-        put("X", R.drawable.tag_x);
-        put("BED", R.drawable.tag_bed);
-        put("CHECK", R.drawable.tag_check);
-    }};
+    // Tag icons are resolved from the host app's drawable resources named with the
+    // prefix `tag_`. E.g. `drawable/tag_meeting`.
 
     public void setTagSize(int sizePx) {
         mTagSize = sizePx;
@@ -1262,15 +1258,21 @@ public class WeekView extends View {
         }
     }
 
-    // Helper to get drawable for a tag
+    // Helper to get drawable for a tag. Only looks up host app drawable resources
+    // named with the prefix `tag_` (e.g. `drawable/tag_meeting`).
     private Drawable getTagIconDrawable(String tag) {
-        Integer resId = TAG_ICON_MAP.get(tag);
-        if (resId == null) return null;
-        try {
-            return getResources().getDrawable(resId);
-        } catch (Exception e) {
+        if (TextUtils.isEmpty(tag) || tag != tag.toUpperCase(Locale.ROOT)) {
             return null;
         }
+        String name = "tag_" + tag.toLowerCase(Locale.ROOT);
+        int resId = getResources().getIdentifier(name, "drawable", getContext().getPackageName());
+        if (resId != 0) {
+            try {
+                return ResourcesCompat.getDrawable(getResources(), resId, getContext().getTheme());
+            } catch (Exception ignored) {
+            }
+        }
+        return null;
     }
 
     // Draw tags
