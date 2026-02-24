@@ -24,10 +24,12 @@ public class WeekViewEvent {
     int mColor;
     private boolean mAllDay;
     private Shader mShader;
+    private List<String> mTags = new ArrayList<>();
 
     public WeekViewEvent() {
 
     }
+
 
     /**
      * Initializes the event for week view.
@@ -219,6 +221,15 @@ public class WeekViewEvent {
     public void setEndTime(Calendar endTime) {
         this.mEndTime = endTime;
     }
+
+    public List<String> getTags() {
+        return mTags;
+    }
+
+    public void setTags(List<String> tags) {
+        this.mTags = tags != null ? tags : new ArrayList<>();
+    }
+
 
     public String getName() {
         return mName;
