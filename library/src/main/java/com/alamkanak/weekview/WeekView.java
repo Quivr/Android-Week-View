@@ -507,6 +507,10 @@ public class WeekView extends View {
         }
 
         init();
+
+        if (isInEditMode()) {
+            goToHour(Math.max(Calendar.getInstance().get(Calendar.HOUR_OF_DAY) - 2, 0));
+        }
     }
 
     private void init() {
@@ -909,9 +913,9 @@ public class WeekView extends View {
 
             // Get more events if necessary. We want to store the events 3 months beforehand. Get
             // events only when it is the first iteration of the loop.
-            if (mEventRects == null || mRefreshEvents ||
+            if (!isInEditMode() && (mEventRects == null || mRefreshEvents ||
                     (dayNumber == leftDaysWithGaps + 1 && mFetchedPeriod != (int) mWeekViewLoader.toWeekViewPeriodIndex(day) &&
-                            Math.abs(mFetchedPeriod - mWeekViewLoader.toWeekViewPeriodIndex(day)) > 0.5)) {
+                            Math.abs(mFetchedPeriod - mWeekViewLoader.toWeekViewPeriodIndex(day)) > 0.5))) {
                 getMoreEvents(day);
                 mRefreshEvents = false;
             }
@@ -1430,9 +1434,9 @@ public class WeekView extends View {
             mFetchedPeriod = -1;
         }
 
-        if (mWeekViewLoader != null) {
+        if (mWeekViewLoader != null && !isInEditMode()) {
             int periodToFetch = (int) mWeekViewLoader.toWeekViewPeriodIndex(day);
-            if (!isInEditMode() && (mFetchedPeriod < 0 || mFetchedPeriod != periodToFetch || mRefreshEvents)) {
+            if (mFetchedPeriod < 0 || mFetchedPeriod != periodToFetch || mRefreshEvents) {
                 List<? extends WeekViewEvent> newEvents = mWeekViewLoader.onLoad(periodToFetch);
 
                 // Clear events.
