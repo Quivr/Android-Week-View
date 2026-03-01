@@ -28,6 +28,7 @@
         <attr name="headerColumnBackground" format="color" />
         <attr name="headerColumnPadding" format="dimension" />
         <attr name="headerColumnTextColor" format="color" />
+        <attr name="headerLineTextColor" format="color" />
         <attr name="headerRowBackgroundColor" format="color" />
         <attr name="headerRowPadding" format="dimension" />
         <attr name="horizontalFlingEnabled" format="boolean" />
